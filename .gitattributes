@@ -1,0 +1,11 @@
+# Normalize line endings — store text as LF in the repo regardless of OS.
+* text=auto eol=lf
+
+# Treat geospatial/data binaries as binary (defensive; most are .gitignore'd).
+*.tif binary
+*.tiff binary
+*.nc binary
+*.hdf binary
+*.grib binary
+*.grib2 binary
+*.zip binary

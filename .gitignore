@@ -1,0 +1,58 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Environments (we use the `f_f` conda env, python=3.13 — not committed)
+.env
+.venv/
+venv/
+env/
+
+# --- Secrets / credentials (never commit) ---
+# FIRMS MAP_KEY, ACLED key, Copernicus account, GEE service-account JSON, etc.
+*.key
+*credentials*.json
+*service-account*.json
+secrets.*
+.earthengine/
+
+# --- Cached external pulls (STRUCTURE.md §9 — cached/checkpointed, reproducible) ---
+# Pulls are reproducible from pinned sources; don't bloat the repo.
+cache/
+**/cache/
+*.cache
+.checkpoints/
+
+# --- Large rasters / geospatial binaries ---
+# Generated artifacts (W1/W2/W4/W5) — regenerated from code, not version-controlled.
+*.tif
+*.tiff
+*.img
+*.nc
+*.hdf
+*.grib
+*.grib2
+*.zip
+*.tar
+*.tar.gz
+
+# Heavy outputs — keep tables/figures tracked selectively if small; ignore by default
+outputs/**/*.tif
+outputs/**/*.tiff
+outputs/**/*.png
+outputs/**/*.jpg
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
