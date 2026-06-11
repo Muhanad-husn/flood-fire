@@ -1,1 +1,1 @@
-"""Pipeline B — Crop fires. STRUCTURE.md §4."""
+"""Pipeline B — Crop fires. docs/STRUCTURE.md §4."""

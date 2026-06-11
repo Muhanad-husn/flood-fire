@@ -1,1 +1,1 @@
-"""Pipeline A — Floods (primary driver). STRUCTURE.md §4."""
+"""Pipeline A — Floods (primary driver). docs/STRUCTURE.md §4."""

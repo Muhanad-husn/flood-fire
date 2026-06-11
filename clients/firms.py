@@ -1,4 +1,4 @@
-"""FIRMS active-fire client — VIIRS 375 m, NOT MODIS (STRUCTURE.md §9).
+"""FIRMS active-fire client — VIIRS 375 m, NOT MODIS (docs/STRUCTURE.md §9).
 
 Access: API + free MAP_KEY. Rate limit: 5,000 requests / 10 min (§9).
 All pulls are cached and checkpointed so retry loops never re-pull.

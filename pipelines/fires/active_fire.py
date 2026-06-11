@@ -1,4 +1,4 @@
-"""Pipeline B — active-fire detection (STRUCTURE.md §4 Pipeline B).
+"""Pipeline B — active-fire detection (docs/STRUCTURE.md §4 Pipeline B).
 
 Window: May–July 2026 fire season; July 2025 Latakia (EMSR811) as documented
 anchor. AOIs: Hasakah (cropland fires), Latakia (coastal/forest).

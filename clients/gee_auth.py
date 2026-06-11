@@ -1,4 +1,4 @@
-"""Google Earth Engine authentication & initialization (STRUCTURE.md §8).
+"""Google Earth Engine authentication & initialization (docs/STRUCTURE.md §8).
 
 Auth is interactive and human-run once: `earthengine authenticate`.
 This module only initializes an already-authenticated session.

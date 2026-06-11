@@ -1,6 +1,6 @@
 # aois/ — canonical AOIs + cropland mask (shared)
 
-Per `STRUCTURE.md` §3.1. Every module consumes these canonical assets; **no
+Per `docs/STRUCTURE.md` §3.1. Every module consumes these canonical assets; **no
 module redefines AOIs**.
 
 Expected contents (produced in W1):
@@ -12,6 +12,6 @@ Expected contents (produced in W1):
   ESA WorldCover, **with disagreement documented** (§9).
 - `control_areas.geojson` — RQ3 only. Indicative government-controlled and
   former AANES boundaries. **Indicative / contested — descriptive overlay
-  only, never a causal or differential claim** (`PRODUCT.md` §5, §9).
+  only, never a causal or differential claim** (`docs/PRODUCT.md` §5, §9).
 
 Binary/vector data files are not stubbed here — they are generated in W1.

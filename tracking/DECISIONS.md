@@ -1,11 +1,11 @@
 # Decision & Change Log
 
-Seeded from `STRUCTURE.md` §10 (locked decisions — do not reopen). Record new
+Seeded from `docs/STRUCTURE.md` §10 (locked decisions — do not reopen). Record new
 decisions below the seed as continued planning and implementation proceed. When
 proposing a revision to a locked decision, state what changes, why it's better,
 and the downstream impacts; reference the original entry.
 
-## Locked decisions (seed — STRUCTURE.md §10)
+## Locked decisions (seed — docs/STRUCTURE.md §10)
 
 - **DEC-001** — Scope is 2026 events; all pre-2026 data is baseline/context only.
 - **DEC-002** — Two phenomena, two parallel pipelines, one repo, one shared damage schema.

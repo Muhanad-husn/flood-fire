@@ -1,4 +1,4 @@
-"""Primary RQ — drought-to-flood/fire whiplash (PRODUCT.md §5 Primary).
+"""Primary RQ — drought-to-flood/fire whiplash (docs/PRODUCT.md §5 Primary).
 
 How much of the 2026 cereal recovery (~2.3 Mt projected, up from the ~1.2 Mt
 2025 drought floor) was reversed by floods and fires, and where — damaged

@@ -1,4 +1,4 @@
-"""ACLED conflict-event client (STRUCTURE.md §5).
+"""ACLED conflict-event client (docs/STRUCTURE.md §5).
 
 Access: API + key (tiered rate limits — cache/checkpoint, §9).
 Feeds RQ2: overlay conflict events on FIRMS/VIIRS hotspots + S2 burn scars

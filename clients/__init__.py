@@ -1,1 +1,1 @@
-"""External-source API clients — all cached and checkpointed (STRUCTURE.md §9)."""
+"""External-source API clients — all cached and checkpointed (docs/STRUCTURE.md §9)."""

@@ -1,6 +1,6 @@
 # baseline/ — 2025 drought reference
 
-Per `STRUCTURE.md` §3.3. Reference layers computed **once**, not per run. All
+Per `docs/STRUCTURE.md` §3.3. Reference layers computed **once**, not per run. All
 2026 damage is expressed relative to this baseline.
 
 Expected contents (produced in W2):
@@ -12,4 +12,4 @@ Expected contents (produced in W2):
 
 Context: 2025 was a record drought — cereal harvest near 1.2 Mt (~60%+ below
 average, worst in ~60 years); ~16.3M people at food-security risk
-(`PRODUCT.md` §2).
+(`docs/PRODUCT.md` §2).

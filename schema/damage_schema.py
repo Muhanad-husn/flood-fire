@@ -1,10 +1,10 @@
-"""Shared damage schema — the integration contract (STRUCTURE.md §3.2).
+"""Shared damage schema — the integration contract (docs/STRUCTURE.md §3.2).
 
 Every damage record, from EITHER pipeline (floods or fires), conforms to this
 one schema. The food-security layer and all RQ analyses consume ONLY this
 schema; nothing downstream reads a pipeline's internal rasters directly.
 
-Hard rule (STRUCTURE.md §6): the food-security layer and RQ analyses must
+Hard rule (docs/STRUCTURE.md §6): the food-security layer and RQ analyses must
 refuse to consume any record whose validation_status != "validated". Tier-2
 outputs are human-gated — no agent/Workflow run may set validation_status to
 "validated".
@@ -29,7 +29,7 @@ class ValidationStatus(str, Enum):
 
 @dataclass
 class DamageRecord:
-    """One damaged-cropland observation, keyed per STRUCTURE.md §3.2."""
+    """One damaged-cropland observation, keyed per docs/STRUCTURE.md §3.2."""
 
     aoi_id: str                       # canonical AOI (aois/, §3.1) — never redefined here
     date: str                         # ISO 8601 (event date / observation window)

@@ -1,4 +1,4 @@
-"""CHIRPS daily rainfall client (STRUCTURE.md §5).
+"""CHIRPS daily rainfall client (docs/STRUCTURE.md §5).
 
 Role F/B. GEE collection: UCSB/CHG/CHIRPS/DAILY (verify against live catalog).
 Feeds the RQ1 rainfall-vs-discharge decomposition and the §3.3 baseline

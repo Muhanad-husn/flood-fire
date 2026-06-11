@@ -1,4 +1,4 @@
-"""RQ3 — descriptive control-area overlay (PRODUCT.md §5 Secondary 3; W9).
+"""RQ3 — descriptive control-area overlay (docs/PRODUCT.md §5 Secondary 3; W9).
 
 DESCRIPTIVE ONLY. Map the distribution of 2026 cropland damage against
 indicative government-controlled and former AANES boundaries. NO causal claim,

@@ -1,4 +1,4 @@
-"""Pipeline A — flood-extent masks (STRUCTURE.md §4 Pipeline A).
+"""Pipeline A — flood-extent masks (docs/STRUCTURE.md §4 Pipeline A).
 
 Window: March–June 2026 (April floods/hailstorms + late-May Euphrates surge).
 AOIs: Deir ez-Zor, Raqqa, Hasakah.

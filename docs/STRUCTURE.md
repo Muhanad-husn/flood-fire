@@ -18,8 +18,10 @@ fires ──┘                              (vs 2025 drought baseline)
 
 ```
 syria-agri-shocks-2026/
-├── PRODUCT.md
-├── STRUCTURE.md
+├── CLAUDE.md             # how Claude works in this repo (navigation hub)
+├── docs/
+│   ├── PRODUCT.md
+│   └── STRUCTURE.md
 ├── aois/                 # canonical AOIs + cropland mask (shared, §3.1)
 │   ├── governorates.geojson
 │   ├── cropland_mask.tif

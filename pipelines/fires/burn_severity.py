@@ -1,4 +1,4 @@
-"""Pipeline B — burn scar + severity -> damaged_cropland_ha (STRUCTURE.md §4).
+"""Pipeline B — burn scar + severity -> damaged_cropland_ha (docs/STRUCTURE.md §4).
 
 Sentinel-2 dNBR for scar and severity; intersect with the canonical cropland
 mask (aois/, §3.1) to get burned-cropland hectares. Emits
