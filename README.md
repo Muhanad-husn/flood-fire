@@ -51,16 +51,34 @@ initialize()   # idempotent; reads EE_PROJECT; never re-auths in a retry loop
 If credentials are missing, `initialize()` raises with the exact
 `earthengine authenticate` remedy — it never launches the flow itself.
 
-### 3. API keys (set as environment variables, never hard-coded)
+### 3. API credentials (secrets.toml or env — never hard-coded)
 
-| Variable | For | Where to get it |
+Client credentials resolve from **`secrets/secrets.toml`** (gitignored), with an
+**env-var override** for each (DEC-020). A clean checkout drops the file in
+`secrets/`:
+
+```toml
+[acled]                       # myACLED OAuth2 (password grant); tokens minted at runtime
+username = "you@org"          # env override: ACLED_EMAIL  (institutional email → higher tier)
+password = "..."              # env override: ACLED_KEY
+
+[firms]
+map_key = "..."               # env override: MAP_KEY
+
+[reliefweb]                   # optional; ReliefWeb v2 needs a pre-approved appname
+appname = "..."               # env override: RELIEFWEB_APPNAME
+```
+
+| Source | Config | Where to get it |
 |---|---|---|
-| `EE_PROJECT` | Earth Engine billing project | Google Cloud console |
-| `MAP_KEY` | NASA FIRMS (VIIRS 375 m hotspots) | https://firms.modaps.eosdis.nasa.gov/api/ |
-| `ACLED_KEY` / `ACLED_EMAIL` | ACLED conflict events (RQ2) | https://acleddata.com/ |
+| Earth Engine | `EE_PROJECT` env + service-account key in `secrets/` (DEC-012) | Google Cloud console |
+| NASA FIRMS (VIIRS 375 m) | `[firms].map_key` / `MAP_KEY` | https://firms.modaps.eosdis.nasa.gov/api/map_key/ |
+| ACLED (RQ2) | `[acled].username`+`password` / `ACLED_EMAIL`+`ACLED_KEY` | https://acleddata.com/register/ (OAuth2) |
+| ReliefWeb (context) | `[reliefweb].appname` / `RELIEFWEB_APPNAME` | https://apidoc.reliefweb.int/parameters#appname |
+| HDX (datasets) | none — public CKAN API | https://data.humdata.org/ |
 
-GloFAS (CDS API), HDX/ReliefWeb, and Copernicus EMS (EMSR811) access paths are
-catalogued in the companion dossier (produced in Session 2).
+GloFAS (CDS/EWDS API) and Copernicus EMS (EMSR811) access paths are catalogued in
+the companion dossier (`syria-2026-agri-shocks-dossier.md` §4).
 
 ## Presentation layer
 

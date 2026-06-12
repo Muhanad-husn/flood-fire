@@ -229,3 +229,52 @@ and the downstream impacts; reference the original entry.
     here if governorate cereal statistics become available.
   - *Downstream:* the food-security layer (S8) reads the 4 study-AOI rows as the
     2025 production reference each AOI's 2026 damage is expressed against (§3.4).
+
+- **DEC-020** (S5/W3) — **Client secrets resolve from `secrets/secrets.toml`
+  (gitignored) with a per-key env-var override; one shared cache + config layer
+  (`clients/_common.py`) backs all four clients.** `secret(section, key, env=…)`
+  checks the env var first, then `[section].key` in the TOML, else raises
+  `ConfigError` with the remedy. A `Cache` (one file per request unit under
+  `cache/<ns>/`, gitignored) is the §9 checkpoint: `Cache.cached()` returns a hit
+  **without calling fetch**, so retries/resumes never re-pull. A persisted
+  `RateLimiter` tracks rolling-window transaction budgets; only real fetches
+  consume it (cache hits don't).
+  - *Why TOML + env, not env-only:* the user provides creds as a single
+    `secrets/secrets.toml`; the dir is already wholly gitignored (DEC-012). Env
+    override keeps the README's `MAP_KEY`/`ACLED_*` convention working and lets
+    CI/clean-checkout inject secrets without a file. `tomllib` is stdlib (py3.13)
+    — no new dependency.
+  - *Why per-request-unit caching:* each `(AOI × window-chunk × source)` (FIRMS),
+    `(AOI, start, end)` series (CHIRPS), or page (ACLED) is its own cache file, so
+    a partial multi-request pull resumes mid-stream rather than restarting (§9).
+  - *Downstream:* every client (and any later external pull) goes through
+    `clients._common`; tests point `_cache`/`_limiter`/`_TOKEN_PATH` at `tmp_path`
+    for hermetic runs. 22 Tier-1 tests in `clients/test_clients.py` (pytest clients/).
+
+- **DEC-021** (S5/W3) — **Live access models confirmed and pinned for the four
+  clients (probed 2026-06-12):**
+  - **FIRMS** — area API `…/api/area/csv/{MAP_KEY}/{SOURCE}/{W,S,E,N}/{day_range≤10}/{end_date}`;
+    VIIRS 375 m only (`VIIRS_SNPP_NRT`/`VIIRS_NOAA20_NRT`/`VIIRS_NOAA21_NRT`; `*_SP`
+    archive), never MODIS (DEC-006). 5,000 transactions/10 min, **a multi-day
+    request costs `day_range` transactions** — tracked locally (the legacy
+    `mapserver/mk_check` headroom endpoint now 404s; `data_availability/csv` is the
+    key-liveness check). NRT coverage is ~last 2 months only (`VIIRS_SNPP_NRT`
+    2026-04-28→06-12 at probe time) — the **2026 flood/fire windows are inside NRT**,
+    but a re-run months later needs the `*_SP` archive products. Live: 103
+    detections over Hasakah, 2026-06-08..10.
+  - **ACLED** — OAuth2 **password grant** at `POST /oauth/token`
+    (`grant_type=password`, `client_id=acled`) → access (24 h) + refresh (~14 d);
+    read at `GET /api/acled/read` with `Authorization: Bearer`, filter
+    `event_date={start}|{end}&event_date_where=BETWEEN`, paginated `?page=N`
+    (500/page). Tokens cached in `cache/acled/_token.json` (**never** in
+    secrets.toml). Live: 256 events (Jun-2024 wk), 907 (Jan-2023).
+  - **ACLED admin1 strings confirmed live** (≠ the hyphen guesses): `Deir ez Zor`,
+    `Ar Raqqa`, `Al Hasakeh`, `Lattakia` — pinned in `acled.ACLED_ADMIN1` for S10.
+  - **HDX** — public CKAN `package_search`, **no key**; live (returns
+    `hdx-hapi-food-security`, `acaps_syria_core_dataset`, …).
+  - **ReliefWeb** — **v1 decommissioned (HTTP 410); migrated to v2**, which
+    requires a **pre-approved `appname`** (HTTP 403 otherwise). `appname` reads
+    from `[reliefweb].appname`/`RELIEFWEB_APPNAME`; until one is registered the
+    client raises an actionable `HdxError` with the registration URL. **Human
+    action:** register an appname at apidoc.reliefweb.int if ReliefWeb corroboration
+    is needed (HDX covers the dataset need without it).
