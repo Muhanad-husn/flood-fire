@@ -118,14 +118,33 @@ The dossier is referenced throughout `CLAUDE.md`, `PRODUCT.md`, and `STRUCTURE.m
 
 ### Completion criteria
 
-- [ ] `syria-2026-agri-shocks-dossier.md` exists with every source's access method, limits, license, and caveats.
-- [ ] Every GEE ID in §5 is marked verified-against-live-catalog (with date) or flagged corrected.
-- [ ] Named validation ground truth (EMSR811, GloFAS, PAX precedent) documented for both phenomena.
-- [ ] Any ID/source discrepancy vs §5 surfaced to the human (not silently resolved).
+- [x] `syria-2026-agri-shocks-dossier.md` exists with every source's access method, limits, license, and caveats.
+- [x] Every GEE ID in §5 is marked verified-against-live-catalog (with date) or flagged corrected.
+- [x] Named validation ground truth (EMSR811, GloFAS, PAX precedent) documented for both phenomena.
+- [x] Any ID/source discrepancy vs §5 surfaced to the human (not silently resolved).
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: Complete (2026-06-12).** Reference session — the companion dossier now exists and every §5 GEE ID is verified against the live catalog. GEE is authenticated on this machine for the first time (service account), which also unblocks S3/S4/S6/S7.
+
+**What was built / changed:**
+- **`syria-2026-agri-shocks-dossier.md`** (repo root, new) — full source catalog: §2 live GEE-ID verification table, §3 GEE sources (res/bands/license), §4 non-GEE (FIRMS/ACLED/GloFAS/HDX/GIEWS), §5 named ground truth, §6 event windows, §7 conventions, §8 license summary.
+- **GEE is now live.** A **service-account key** (`secrets/rich-stratum-429021-u4-a0736597d906.json`, project `rich-stratum-429021-u4`, SA `cip-346@…`) authenticates headlessly. The earlier `earthengine authenticate` (user OAuth) flow was **blocked by Google deprecating the `drive` scope on the default EE client** — that path is abandoned in favor of the service account.
+- **`clients/gee_auth.py`** extended (**DEC-012**): tries a service-account key first (`EE_SERVICE_ACCOUNT_KEY` env, else a lone `service_account` JSON in `secrets/`), falls back to cached user creds; project defaults to the key's `project_id`. Verified end-to-end via `initialize()` (read real S1/CHIRPS/WorldCover data).
+- **`.gitignore`** — now ignores the **entire `secrets/` dir** (the SA filename matched none of the prior patterns; a private key was committable). Security fix.
+- **`tracking/DECISIONS.md`** — **DEC-012** (service-account auth), **DEC-013** (CHIRPS ID correction + §5 drift flag).
+
+**ID verification result (live, 2026-06-12):** 8/9 §5 IDs verified exactly. **CHIRPS corrected:** `UCSB/CHG/CHIRPS/DAILY` → **`UCSB-CHG/CHIRPS/DAILY`** (hyphen namespace; the slash form is not found). Captured facts: DW `crops` band, WorldCover Cropland = class **40**, JRC GSW is an **Image** not a collection, GEE `FIRMS` is **MODIS-derived** (VIIRS stays on API), S1 polarization **varies by scene** (filter by `transmitterReceiverPolarisation`).
+
+**Two items needing human attention (drift surfaced, not resolved):**
+1. **CHIRPS §5 edit** — recommend updating `docs/STRUCTURE.md` §5 to `UCSB-CHG/CHIRPS/DAILY` (or annotate). Left to the human per Working Rules.
+2. **ACLED access model changed** — ACLED moved to **OAuth/`myACLED`** (legacy static API key deprecated) and prefers an **institutional-domain email** (a `gmail.com` may get a lower tier). S5 `acled.py` must implement the OAuth token exchange, not a key query string; consider registering with an institutional email if higher-tier access is needed for S10/RQ2.
+
+**For the next session (S3 — AOIs + reconciled cropland mask):**
+- GEE is ready; just call `clients.gee_auth.initialize()`. Use the **verified** IDs: `GOOGLE/DYNAMICWORLD/V1` (`crops` band) and `ESA/WorldCover/v200` (Cropland = **40**) for the mask reconciliation (§3.1). Document DW-vs-WorldCover disagreement (§9).
+- AOIs: Deir ez-Zor, Raqqa, Hasakah (floods) + Hasakah, Latakia (fires) — five governorates total.
+- The cropland mask is **human-reviewed** (S3 Tier gate) before any pipeline consumes it.
+- Benign noise to ignore (carried from S1): `conda run` prints a `gdk-pixbuf` librsvg warning on Windows; filter it. `conda run -n f_f python -c "<multiline>"` fails on newlines — write a temp script and run that (temp scripts in `secrets/` are gitignored and easy to clean).
 
 ---
 
@@ -480,7 +499,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | Session | Title | Status | Date | Notes |
 |---------|-------|--------|------|-------|
 | 1 | W0 — Foundation (env, GEE auth, schema) | Complete | 2026-06-12 | Tier-1; env populated, schema+gee_auth wired, DEC-009/010/011 |
-| 2 | Data-source dossier + GEE ID verification | Not started | | Reference; precede S6/S7 |
+| 2 | Data-source dossier + GEE ID verification | Complete | 2026-06-12 | Dossier written; 8/9 IDs verified, CHIRPS corrected (DEC-013); GEE live via service account (DEC-012) |
 | 3 | W1 — AOIs + reconciled cropland mask | Not started | | Human-reviewed mask |
 | 4 | W2 — 2025 baseline layers | Not started | | Compute-heavy |
 | 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX) | Not started | | **Parallel-eligible** |
