@@ -174,16 +174,17 @@ The dossier is referenced throughout `CLAUDE.md`, `PRODUCT.md`, and `STRUCTURE.m
 - [x] `governorates.geojson`, `cropland_mask.tif`, `control_areas.geojson` exist, sourced and documented. *(Vectors EPSG:4326 / GeoJSON standard; raster EPSG:32637 UTM 37N @ 30 m for metric area — each internally consistent, both documented in `aois/README.md`.)*
 - [x] Cropland-mask Dynamic World vs WorldCover disagreement is documented (§3.1, §9) — `aois/MASK_DISAGREEMENT.md` (+ in-band classes 1/2/3 and `outputs/aoi_qc/`).
 - [x] `control_areas.geojson` carries explicit indicative/descriptive/contested provenance (per-feature `caveat` + `indicative:true`, DEC-005).
-- [ ] **Human review** of the cropland mask against known agricultural extent — **OPEN (Tier-2 gate, DEC-007; an agent may not tick this).** Review surface ready: `outputs/aoi_qc/*.png` + `summary.json`.
+- [x] **Human review** of the cropland mask against known agricultural extent — **PASSED (human verdict, 2026-06-12):** reviewed `outputs/aoi_qc/*.png`; the agreement (class 3) extent is accurate against known Syrian agriculture and the DW `crops>0.35` threshold (DEC-015) is confirmed. Mask approved for downstream consumption (Tier-2 gate closed by human, DEC-007).
 - [x] Reconciliation rule recorded in `tracking/DECISIONS.md` (DEC-014/015/016).
 
 ### Handoff notes
 
-**Status: Code-complete (2026-06-12); ONE Tier-2 gate OPEN — human cropland-mask
-review.** All three shared spatial assets are built, verified, and documented. The
-only unmet completion criterion is the **human mask review**, which no agent may
-self-certify (§6, DEC-007). S4/S6/S7 should not treat the mask as final until a
-human has signed off (review surface is ready — see below).
+**Status: COMPLETE (2026-06-12).** All three shared spatial assets are built,
+verified, documented, and the **human cropland-mask review gate is PASSED** —
+reviewed against known Syrian agricultural extent; the agreement-class extent is
+accurate and the DW `crops>0.35` threshold (DEC-015) is confirmed (Tier-2 gate
+closed by human, §6/DEC-007). The mask is approved for downstream consumption by
+S4 (baseline), S6/S7 (pipelines).
 
 **What was built / changed:**
 - **`aois/governorates.geojson`** (EPSG:4326) — 4 AOIs from **FAO GAUL 2015 L1**
@@ -560,7 +561,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 |---------|-------|--------|------|-------|
 | 1 | W0 — Foundation (env, GEE auth, schema) | Complete | 2026-06-12 | Tier-1; env populated, schema+gee_auth wired, DEC-009/010/011 |
 | 2 | Data-source dossier + GEE ID verification | Complete | 2026-06-12 | Dossier written; 8/9 IDs verified, CHIRPS corrected (DEC-013); GEE live via service account (DEC-012) |
-| 3 | W1 — AOIs + reconciled cropland mask | Code-complete | 2026-06-12 | Assets built/verified; DEC-014/015/016. ⚠ **human mask-review gate OPEN** (Tier-2) — review `outputs/aoi_qc/` |
+| 3 | W1 — AOIs + reconciled cropland mask | Complete | 2026-06-12 | Assets built/verified; DEC-014/015/016. ✅ human mask-review gate PASSED (Tier-2); DW threshold confirmed |
 | 4 | W2 — 2025 baseline layers | Not started | | Compute-heavy |
 | 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX) | Not started | | **Parallel-eligible** |
 | 6 | W4 — Floods → damage | Not started | | **Tier-2 human gate** |
