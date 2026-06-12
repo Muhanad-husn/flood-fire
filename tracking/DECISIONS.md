@@ -38,3 +38,41 @@ and the downstream impacts; reference the original entry.
   - *Downstream:* W6–W9 figure functions live with their modules and import `viz`;
     a report page per analysis is filled in as validated outputs land (S8–S12).
     `environment.yml` adds the viz deps; Quarto is a system install.
+
+- **DEC-009** (S1/W0) — **`severity_class` vocabulary pinned per phenomenon** in
+  `schema/damage_schema.py` (`SEVERITY_CLASSES`), enforced by `validate_record()`.
+  - *Floods:* `transient` (single-date SAR inundation), `persistent` (multi-date
+    standing water), `permanent_excluded` (JRC GSW permanent river — subtracted,
+    a zero-damage exclusion class, not damage).
+  - *Fires:* `unburned | low | moderate_low | moderate_high | high`, following the
+    conventional Sentinel-2 dNBR thresholds (Key & Benson / USGS FIREMON:
+    dNBR <0.10 / 0.10 / 0.27 / 0.44 / 0.66). `unburned` is a zero-damage class.
+  - *Why:* the schema is the single integration contract (§3.2); pinning the vocab
+    here lets the food-security/RQ layers group and weight by severity without
+    reading pipeline internals. `permanent_excluded`/`unburned` are asserted to
+    carry `damaged_cropland_ha == 0.0` so the exclusion is explicit in the table.
+  - *Downstream:* W4 (floods) emits flood bins; W5 (fires) emits dNBR bins; both
+    must use only these strings. Revisit here (not in code) if a pipeline needs a
+    finer bin.
+
+- **DEC-010** (S1/W0) — **Canonical `outputs/` table format = CSV (interchange) +
+  Parquet (typed/compact)**, with a lossless round-trip in `schema.damage_schema`
+  (`write_csv`/`read_csv`, `write_parquet`/`read_parquet`; columns = dataclass
+  field order, enums stored as `.value`).
+  - *Why:* CSV is git-/human-friendly and dependency-free (the schema core imports
+    no geo/pandas deps); Parquet is the typed, compact form for pipeline I/O.
+    Both round-trip identically so either may be the on-disk form. `__post_init__`
+    coerces string columns back into the `Phenomenon`/`ValidationStatus` enums so a
+    read record `==` the written record. Tier-1 tests in `schema/test_damage_schema.py`.
+  - *Downstream:* every module that writes `DamageRecord`s to `outputs/` uses these
+    helpers rather than ad-hoc serialization.
+
+- **DEC-011** (S1/W0) — **GEE billing project comes from the `EE_PROJECT` env var**
+  (`clients/gee_auth.initialize()`), never hard-coded; `initialize()` is idempotent
+  and never launches the interactive auth flow or re-auths in a retry loop (§9).
+  - *Why:* §8 auth is human-run once (`earthengine authenticate`); the code path
+    only initializes a cached session and fails loudly with the exact remedy when
+    credentials are absent. Keeps secrets/config out of the repo and retry loops
+    rate-limit-safe.
+  - *Downstream:* every GEE-touching module calls `gee_auth.initialize()` once at
+    entry; first-run steps documented in the root `README.md`.

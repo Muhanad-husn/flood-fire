@@ -70,14 +70,28 @@ The repo is scaffolded: every module is a stub whose docstring already cites the
 
 ### Completion criteria
 
-- [ ] `conda env create -f environment.yml` (or update) resolves and the geo stack imports without error.
-- [ ] `gee_auth.initialize()` succeeds against cached creds and gives an actionable message when creds are missing.
-- [ ] `DamageRecord` round-trips through (de)serialization; `severity_class` vocab is documented per phenomenon.
-- [ ] Severity vocab + table-format choices recorded in `tracking/DECISIONS.md`.
+- [x] `conda env create -f environment.yml` (or update) resolves and the geo stack imports without error.
+- [x] `gee_auth.initialize()` succeeds against cached creds and gives an actionable message when creds are missing.
+- [x] `DamageRecord` round-trips through (de)serialization; `severity_class` vocab is documented per phenomenon.
+- [x] Severity vocab + table-format choices recorded in `tracking/DECISIONS.md`.
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: Complete (2026-06-12).** Repo is runnable from a clean checkout; schema is finalized as the stable integration contract. Tier-1 only — no Tier-2 gates in this session.
+
+**What was built / changed:**
+- `environment.yml` already existed and was correct (geo stack + DEC-008 viz deps + pytest). The `f_f` conda env was **bare (22 base pkgs)**, so I ran `conda env update -n f_f -f environment.yml`. It now imports cleanly: geopandas 1.1.3, rasterio 1.5.0, xarray 2026.4.0, pandas 2.3.3, pyarrow, ee, seaborn/matplotlib/contextily/folium/geemap.
+- `schema/damage_schema.py` — finalized the `TODO(W0)`: `SEVERITY_CLASSES` per phenomenon, `validate_record()` (vocab + non-damage-class-is-0ha + non-negative gates), `__post_init__` enum coercion, and lossless CSV (stdlib) + Parquet (pandas) (de)serialization. **The schema core imports no geo/pandas deps** — pandas is a lazy import only inside the Parquet helpers, so the contract stays runnable anywhere.
+- `schema/test_damage_schema.py` — 7 Tier-1 tests (kept inside the established `schema/` package, not a new top-level dir). `conda run -n f_f python -m pytest schema/` → **7 passed**. Parquet test `importorskip`s pandas/pyarrow so it's safe without the geo env.
+- `clients/gee_auth.py` — idempotent `initialize(project=None, force=False)`, `EE_PROJECT` from env, module-level latch (no re-auth in retry loops), `GEEAuthError` with the `earthengine authenticate` remedy. Verified: imports clean; on this (un-authed) machine `initialize()` raises the actionable hint as designed. **The success-on-cached-creds branch is human-gated** — a human must run `earthengine authenticate` + set `EE_PROJECT` once before any GEE session (S3+) actually pulls.
+- `README.md` (new, repo root) — first-run bootstrap: env → `earthengine authenticate`/`EE_PROJECT` → API keys (`MAP_KEY`, `ACLED_KEY`/`ACLED_EMAIL`). Plan-sanctioned S1 output.
+- `tracking/DECISIONS.md` — logged **DEC-009** (severity vocab per phenomenon), **DEC-010** (CSV+Parquet canonical table format + round-trip helpers), **DEC-011** (GEE auth via `EE_PROJECT`, idempotent, no interactive flow in code).
+
+**For the next session (S2 — dossier + GEE ID verification):**
+- S2 depends only on S1 and needs a **working `gee_auth`** to query the live catalog — but **GEE is not yet authenticated on this machine.** Before S2 can verify IDs against the live catalog, the human must run `earthengine authenticate` and `export EE_PROJECT=<project>`. Flag this at S2 start; it's the one human prerequisite.
+- S2 verifies the §5 GEE IDs and writes the missing `syria-2026-agri-shocks-dossier.md`. Do **not** invent IDs/caveats — verify each live and cite. S3 (AOIs/mask) should consume S2's verified DW/WorldCover IDs.
+- Severity vocab strings are now pinned (DEC-009): W4 floods must emit `transient|persistent|permanent_excluded`; W5 fires must emit `unburned|low|moderate_low|moderate_high|high`. Pipelines write `DamageRecord`s via `schema.damage_schema.write_csv`/`write_parquet`, never ad-hoc.
+- Benign noise to ignore: `conda run` prints a `gdk-pixbuf libpixbufloader_svg.dll` warning on every invocation (librsvg loader registration on Windows) — unrelated to our stack; filter it. Also, `conda run -n f_f python -c "<multiline>"` fails with "arguments contain newlines not implemented" — write the script to a temp file and run that instead.
 
 ---
 
@@ -465,7 +479,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 
 | Session | Title | Status | Date | Notes |
 |---------|-------|--------|------|-------|
-| 1 | W0 — Foundation (env, GEE auth, schema) | Not started | | Tier-1 |
+| 1 | W0 — Foundation (env, GEE auth, schema) | Complete | 2026-06-12 | Tier-1; env populated, schema+gee_auth wired, DEC-009/010/011 |
 | 2 | Data-source dossier + GEE ID verification | Not started | | Reference; precede S6/S7 |
 | 3 | W1 — AOIs + reconciled cropland mask | Not started | | Human-reviewed mask |
 | 4 | W2 — 2025 baseline layers | Not started | | Compute-heavy |
