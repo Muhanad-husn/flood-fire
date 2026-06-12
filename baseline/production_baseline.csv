@@ -1,0 +1,15 @@
+gaul_adm1,aoi_id,is_study_aoi,cropland_ha,cropland_share,cereal_production_2025_t
+Hassakeh,hasakah,True,1547912,0.2882,345841
+Aleppo,,False,1053182,0.19609,235306
+Raqqa,raqqa,True,587154,0.10932,131184
+Hama,,False,422975,0.07875,94503
+Homs,,False,340486,0.06339,76073
+Idleb,,False,335992,0.06256,75069
+Dayr_Az_Zor,deir_ez_zor,True,293510,0.05465,65577
+Dara,,False,290059,0.05401,64806
+As_Suweida,,False,235429,0.04383,52600
+Damascus,,False,150654,0.02805,33660
+Al_Qunaytirah,,False,91952,0.01712,20544
+Tartous,,False,15154,0.00282,3386
+Lattakia,latakia,True,6067,0.00113,1356
+City_Damascus,,False,426,8e-05,95

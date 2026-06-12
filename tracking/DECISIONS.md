@@ -164,3 +164,68 @@ and the downstream impacts; reference the original entry.
     EE's "user memory limit"; an export retry loop absorbs transient memory errors.
   - *Downstream:* the same path serves any later raster pull that exceeds the
     single-`getDownloadURL` size cap (baseline NDVI W2, flood/burn rasters W4/W5).
+
+- **DEC-017** (S4/W2) — **CHIRPS rainfall deficit = the Nov 2024–May 2025 season
+  total minus a 1991–2020 (30-season) climatological normal of the same Nov–May
+  window, reported as AOI-mean (not cropland-masked).**
+  `baseline/rainfall_deficit.csv`: columns `aoi_id, name,
+  season_total_mm_2024_2025, climatology_mm_1991_2020, deficit_mm, deficit_pct`.
+  - *Why AOI-mean, not cropland-masked:* CHIRPS pixels are ~5566 m — far larger
+    than a field — so masking the precipitation grid to 30 m cropland is
+    meaningless; the AOI mean is the honest meteorological quantity. The window
+    is the §3.3-pinned Nov 2024–May 2025. The normal is the WMO-style 30-year
+    period, built as the mean of 30 per-season Nov–May sums (start-years
+    1991–2020), excluding the 2024/25 drought season.
+  - *Result (live, 2026-06-12):* deficits Deir ez-Zor −26.1%, Raqqa −19.8%,
+    Hasakah −25.3%, Latakia −23.0%. A ~20–26% rainfall deficit driving a ~60%
+    cereal-production collapse (PRODUCT §2) is consistent with rainfed-cereal
+    non-linearity near the wilting margin and the loss of the grain-fill window
+    — the deficit is the meteorological driver, not the production number itself
+    (that comes from GIEWS, [[DEC-019]]).
+  - *Downstream:* RQ1 (S9) reuses the CHIRPS series; the deficit is the baseline
+    drought reference the 2026 flood "whiplash" is measured against.
+
+- **DEC-018** (S4/W2) — **2025 NDVI anomaly = Sentinel-2 growing-season (Mar–May)
+  per-pixel MAX NDVI for 2025 minus the 2019–2024 mean of the same, on cropland
+  (union), 30 m EPSG:32637.** `baseline/ndvi_anomaly_2025.tif` (float32,
+  nodata −9999). SCL-cloud-masked S2_SR_HARMONIZED; bilinear-resampled then
+  reprojected 10 m→30 m (the `.max()` composite has no fixed projection, so
+  `reduceResolution` is unavailable — bilinear reproject is used instead).
+  Cropland masking is enforced **locally** against `aois/cropland_mask.tif`
+  (value ∈ {1,2,3}, [[DEC-015]]), resampled nearest onto the NDVI grid.
+  - *Why the 2019–2024 normal (only 6 seasons):* the S2_SR archive does not
+    predate ~2017, so a long climatology is impossible from Sentinel-2; the
+    NDVI layer carries the **spatial pattern** of cropland drought stress while
+    the **long-baseline magnitude** lives in the CHIRPS deficit ([[DEC-017]]) —
+    complementary, by design. MAX over Mar–May captures peak winter-wheat
+    greenness regardless of acquisition timing (PRODUCT §2 "critical final
+    growth stage"). Output is the raw NDVI difference (not a z-score: 6 seasons
+    give an unstable std).
+  - *Result (live, 2026-06-12):* mean anomaly Hasakah −0.277, Raqqa −0.197,
+    Deir ez-Zor −0.142, Latakia −0.054; **87.6% of all cropland pixels are
+    negative.** The inland-to-coast gradient tracks the rainfall deficit and the
+    drought narrative. Valid cropland px = 26,538,663 = 2,388,480 ha — **exactly**
+    the S3 union total, confirming pixel-perfect alignment to the cropland mask.
+  - *Downstream:* baseline/context ONLY (DEC-001) — never the subject of analysis;
+    a drought-stress reference for the food-security layer (S8) and figures.
+
+- **DEC-019** (S4/W2) — **The FAO/GIEWS ~1.2 Mt 2025 national cereal floor is
+  disaggregated across all 14 Syrian governorates by cropland-area share**
+  (cropland union hectares per governorate ÷ national total), so the table sums
+  exactly to the floor. `baseline/production_baseline.csv`: all 14 GAUL L1
+  governorates with `aoi_id`/`is_study_aoi` flags; the 4 study AOIs hold 45% of
+  the floor (≈544 kt). Per-governorate cropland area = mean(cropland binary) at
+  300 m sampling × governorate area (a single 30 m `reduceRegions` over all 14
+  times out server-side; the 300 m fraction is scale-robust and the share is a
+  ratio — validated within ~2% against the authoritative 30 m `_mask_stats.json`
+  for the study AOIs).
+  - *Assumption & limitation (documented):* this assumes **uniform cereal yield
+    per cropland hectare** across governorates — the drought hit unevenly, so the
+    flat key understates the spatial variance. That variance is captured instead
+    by the NDVI anomaly ([[DEC-018]]) and rainfall deficit ([[DEC-017]]) layers;
+    a yield-weighted key was rejected to avoid coupling the production baseline to
+    those layers' assumptions. Sub-national GIEWS production figures are not in
+    the repo; cropland-area share is the transparent, reproducible key. Revisit
+    here if governorate cereal statistics become available.
+  - *Downstream:* the food-security layer (S8) reads the 4 study-AOI rows as the
+    2025 production reference each AOI's 2026 damage is expressed against (§3.4).
