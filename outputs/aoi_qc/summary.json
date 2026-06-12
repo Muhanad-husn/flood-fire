@@ -1,0 +1,50 @@
+{
+  "deir_ez_zor": {
+    "name": "Deir ez-Zor",
+    "union_ha": 287642.2,
+    "intersection_ha": 81154.0,
+    "disagreement_share": 0.718,
+    "class_pixels": {
+      "0": 27130423,
+      "1": 2248351,
+      "2": 45962,
+      "3": 901711
+    }
+  },
+  "raqqa": {
+    "name": "Raqqa",
+    "union_ha": 576776.0,
+    "intersection_ha": 209897.9,
+    "disagreement_share": 0.636,
+    "class_pixels": {
+      "0": 13472766,
+      "1": 3876850,
+      "2": 199573,
+      "3": 2332199
+    }
+  },
+  "hasakah": {
+    "name": "Hasakah",
+    "union_ha": 1513953.2,
+    "intersection_ha": 846302.2,
+    "disagreement_share": 0.441,
+    "class_pixels": {
+      "0": 8470449,
+      "1": 7218819,
+      "2": 199525,
+      "3": 9403358
+    }
+  },
+  "latakia": {
+    "name": "Latakia",
+    "union_ha": 9875.5,
+    "intersection_ha": 2790.6,
+    "disagreement_share": 0.717,
+    "class_pixels": {
+      "0": 2590829,
+      "1": 48725,
+      "2": 29996,
+      "3": 31007
+    }
+  }
+}

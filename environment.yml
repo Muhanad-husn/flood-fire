@@ -31,5 +31,7 @@ dependencies:
   - leafmap         # interactive maps (report embeds + validation workbench)
   - geemap          # GEE-tile inspection in the Tier-2 validation notebooks
   - jupyter         # notebook kernel for the validation workbench + Quarto execute
+  # --- large-raster export from GEE without the (deprecated) Drive scope ---
+  - geedim          # tiled getPixels download + mosaic (W1 cropland mask; DEC-012 context)
   # --- testing ---
   - pytest

@@ -112,3 +112,55 @@ and the downstream impacts; reference the original entry.
   - *Other §5 IDs:* the remaining 8 verified exactly as written (see dossier §2).
     Note `JRC/GSW1_4/GlobalSurfaceWater` is an **Image**, not a collection; the GEE
     `FIRMS` collection is **MODIS-derived** (VIIRS detection stays on the API).
+
+- **DEC-014** (S3/W1) — **Canonical AOIs from FAO GAUL 2015 level 1.**
+  `aois/governorates.geojson` is built from `FAO/GAUL/2015/level1`
+  (`ADM0_NAME == "Syrian Arab Republic"`), four AOIs by `ADM1_NAME`:
+  `Dayr_Az_Zor`→deir_ez_zor, `Raqqa`→raqqa, `Hassakeh`→hasakah, `Lattakia`→latakia.
+  Stored EPSG:4326 (GeoJSON/CRS84) with `aoi_id, name, gaul_adm1, area_km2,
+  pipelines` properties. Areas: Deir ez-Zor 27,307 / Raqqa 17,906 / Hasakah 22,758
+  / Latakia 2,429 km².
+  - *Why:* GAUL is a single authoritative, GEE-native admin source (no external
+    download, reproducible from a clean checkout). `aoi_id` strings are the stable
+    keys the shared schema's `aoi_id` field (§3.2) references; no module redefines
+    them (§3.1). Pipeline tags encode §4 (floods: DeZ/Raqqa/Hasakah; fires:
+    Hasakah/Latakia).
+  - *Downstream:* every module loads these geometries; pipelines clip detection to
+    them. Generator: `aois/build_aois.py`.
+
+- **DEC-015** (S3/W1) — **Cropland mask = one categorical reconciliation raster,
+  30 m, EPSG:32637 (UTM 37N), built UNION-first with disagreement encoded in-band.**
+  `aois/cropland_mask.tif`: `0`=neither, `1`=WorldCover-only, `2`=DynamicWorld-only,
+  `3`=both agree, `255`=outside AOI (nodata). **Cropland = value ∈ {1,2,3} (union,
+  headline); value == 3 = intersection (conservative).** Sources (verified S2):
+  ESA WorldCover v200 **class 40**; Dynamic World **annual-mean `crops` prob > 0.35**
+  over 2021 (WorldCover v200 reference year). 10 m→30 m via **mode** reduceResolution;
+  each AOI **clipped to its polygon** then mosaicked.
+  - *Why:* §3.1 mandates "one mask… with disagreement documented" — encoding the
+    DW/WC agreement as the pixel value documents disagreement *in the same artifact*
+    (classes 1,2 are the disagreement; 3 is agreement), and lets downstream weight
+    union vs intersection without reading pipeline internals. Union is the headline
+    so cropland (hence damage) is not silently under-counted; intersection is kept
+    for a sensitivity bound. 30 m balances fidelity (riparian Euphrates cropland)
+    against the export constraint that the **Drive OAuth scope is blocked** (DEC-012),
+    so masks are pulled tile-by-tile via getPixels (geedim) where 10 m full-extent
+    is impractical. UTM 37N gives metric pixels (0.09 ha each) for honest area sums;
+    Latakia sits at the zone's western edge (<0.1% area distortion — acceptable).
+  - *DW threshold is a judgement call:* `crops>0.35` is conservative; WorldCover is
+    far more liberal (esp. rainfed/fallow Deir ez-Zor), driving a large union-vs-
+    intersection spread — see `aois/MASK_DISAGREEMENT.md`. Revisit the threshold here
+    (not in code) if the human review finds it mis-calls the agricultural extent.
+  - *Downstream:* W4/W5 intersect detection with `value ∈ {1,2,3}`; **report damage
+    under both union and intersection** as a sensitivity range. Mask is **Tier-2
+    human-reviewed** before any pipeline consumes it (§6, DEC-007) — QC surface in
+    `outputs/aoi_qc/`.
+
+- **DEC-016** (S3/W1) — **Large GEE rasters are exported via `geedim` (tiled
+  getPixels + mosaic), not `Export.image.toDrive`.** Added to `environment.yml`.
+  - *Why:* the EE Drive OAuth scope is deprecated/blocked for this project's auth
+    (DEC-012), so `toDrive` is unavailable; `geedim` downloads bounded tiles through
+    `getPixels` (no Drive) and is fully non-interactive, serving S12 clean-checkout
+    reproducibility. Small tiles (`max_tile_dim=1500`) keep per-tile compute under
+    EE's "user memory limit"; an export retry loop absorbs transient memory errors.
+  - *Downstream:* the same path serves any later raster pull that exceeds the
+    single-`getDownloadURL` size cap (baseline NDVI W2, flood/burn rasters W4/W5).
