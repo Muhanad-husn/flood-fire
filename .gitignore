@@ -27,6 +27,7 @@ secrets/
 *service-account*.json
 secrets.*
 .earthengine/
+secrets\rich-stratum-429021-u4-a0736597d906.json
 
 # --- Cached external pulls (STRUCTURE.md §9 — cached/checkpointed, reproducible) ---
 # Pulls are reproducible from pinned sources; don't bloat the repo.

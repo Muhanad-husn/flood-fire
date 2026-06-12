@@ -171,15 +171,75 @@ The dossier is referenced throughout `CLAUDE.md`, `PRODUCT.md`, and `STRUCTURE.m
 
 ### Completion criteria
 
-- [ ] `governorates.geojson`, `cropland_mask.tif`, `control_areas.geojson` exist with a single consistent CRS/resolution, sourced and documented.
-- [ ] Cropland-mask Dynamic World vs WorldCover disagreement is documented (§3.1, §9).
-- [ ] `control_areas.geojson` carries explicit indicative/descriptive/contested provenance.
-- [ ] **Human review** of the cropland mask against known agricultural extent (the mask underpins every `damaged_cropland_ha`; confirm it is not obviously wrong before pipelines consume it).
-- [ ] Reconciliation rule recorded in `tracking/DECISIONS.md`.
+- [x] `governorates.geojson`, `cropland_mask.tif`, `control_areas.geojson` exist, sourced and documented. *(Vectors EPSG:4326 / GeoJSON standard; raster EPSG:32637 UTM 37N @ 30 m for metric area — each internally consistent, both documented in `aois/README.md`.)*
+- [x] Cropland-mask Dynamic World vs WorldCover disagreement is documented (§3.1, §9) — `aois/MASK_DISAGREEMENT.md` (+ in-band classes 1/2/3 and `outputs/aoi_qc/`).
+- [x] `control_areas.geojson` carries explicit indicative/descriptive/contested provenance (per-feature `caveat` + `indicative:true`, DEC-005).
+- [ ] **Human review** of the cropland mask against known agricultural extent — **OPEN (Tier-2 gate, DEC-007; an agent may not tick this).** Review surface ready: `outputs/aoi_qc/*.png` + `summary.json`.
+- [x] Reconciliation rule recorded in `tracking/DECISIONS.md` (DEC-014/015/016).
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: Code-complete (2026-06-12); ONE Tier-2 gate OPEN — human cropland-mask
+review.** All three shared spatial assets are built, verified, and documented. The
+only unmet completion criterion is the **human mask review**, which no agent may
+self-certify (§6, DEC-007). S4/S6/S7 should not treat the mask as final until a
+human has signed off (review surface is ready — see below).
+
+**What was built / changed:**
+- **`aois/governorates.geojson`** (EPSG:4326) — 4 AOIs from **FAO GAUL 2015 L1**
+  (DEC-014): deir_ez_zor (27,307 km²), raqqa (17,906), hasakah (22,758), latakia
+  (2,429). Properties: `aoi_id, name, gaul_adm1, area_km2, pipelines`. `aoi_id` is
+  the stable key the schema's `aoi_id` field references.
+- **`aois/cropland_mask.tif`** (EPSG:32637 / UTM 37N, 30 m, nodata=255) — **one
+  categorical reconciliation raster** (DEC-015): `0`=neither, `1`=WorldCover-only,
+  `2`=DynamicWorld-only, `3`=both, `255`=outside AOI. **Cropland = {1,2,3} (union);
+  3 = intersection.** Sources: WorldCover v200 cls40; DW annual-mean `crops`>0.35
+  (2021). Totals: **union 2,388,480 ha; intersection 1,140,395 ha.**
+- **`aois/control_areas.geojson`** (EPSG:4326) — **RQ3 INDICATIVE only** (DEC-005).
+  5 features; Deir ez-Zor split NE/SW by a *schematic* Euphrates proxy line (former
+  AANES / government), others single-labelled from 2017–2024 control geography.
+  Every feature carries `caveat` + `indicative:true`. **Not an authoritative map.**
+- **`aois/MASK_DISAGREEMENT.md`** — the §3.1/§9 disagreement note (numbers below).
+- **`aois/build_aois.py`, `build_control_areas.py`, `qc_preview.py`** — reproducible
+  generators (run in that order). **`outputs/aoi_qc/`** — per-AOI PNG previews +
+  `summary.json` (the human-review surface).
+- **`environment.yml`** — added **geedim** (DEC-016). **`tracking/DECISIONS.md`** —
+  DEC-014/015/016.
+
+**The headline finding — cropland-mask disagreement is large and systematic:**
+WorldCover is far more liberal than Dynamic World (WC-only 1.21 M ha vs DW-only
+0.04 M ha, ~28:1). Per-AOI disagreement (1 − inter/union): **Deir ez-Zor 72%,
+Raqqa 64%, Hasakah 44%, Latakia 72%.** Agreement concentrates in irrigated/high-
+rainfall cores (N. Jazira, Khabur, Euphrates corridor); WorldCover-only rings them
+(rainfed/fallow). **Consequence for W4/W5/W6: report `damaged_cropland_ha` under
+BOTH union and intersection as a sensitivity range — union ≈ 2× intersection
+overall (≈3.5× in Deir ez-Zor).** The `crops>0.35` DW threshold is the main lever
+(DEC-015) — revisit there, not in code, if review finds the extent mis-called.
+
+**For the next session (S4 — 2025 baseline layers):**
+- GEE is live; call `clients.gee_auth.initialize()`. Load AOIs from
+  `aois/governorates.geojson`; mask NDVI anomaly / deficits to
+  `aois/cropland_mask.tif` (**cropland = value ∈ {1,2,3}**, nodata 255). Use the
+  S2-verified **`UCSB-CHG/CHIRPS/DAILY`** (DEC-013) for the rainfall deficit.
+- **Reuse the geedim tiled-export path (DEC-016)** for the NDVI-anomaly raster —
+  `Export…toDrive` is unavailable (Drive scope blocked, DEC-012). Pattern: build
+  the image, `prepareForExport(crs="EPSG:32637", scale=…, region=geom)`, then
+  `.gd.toGeoTIFF(..., max_tile_dim=1500)`; clip to AOI **locally** after download
+  (geedim fills out-of-polygon with 0, NOT nodata — the lesson from S3).
+- Decide baseline raster resolution vs the 30 m mask; if you go finer than 30 m,
+  resample the mask, don't redefine cropland.
+
+**Gotchas carried forward:**
+- `conda run -n f_f python -c "<multiline>"` still fails ("arguments contain
+  newlines") — write a temp script (e.g. in gitignored `secrets/`) and run that.
+- Filter the benign `gdk-pixbuf`/librsvg warning on every `conda run`.
+- geedim per-tile compute can hit "User memory limit exceeded" — keep
+  `max_tile_dim≈1500`; the export retry loop in `build_aois.py:export_aoi_mask`
+  is the template.
+- stdout from a backgrounded `conda run` buffers until exit; tqdm writes `\r`
+  progress to stderr. For live progress, tee to a logfile and `tr '\r' '\n'`.
+- `aois/_mask_tiles/` is a gitignored GEE-download cache; `mosaic_from_tiles()`
+  rebuilds `cropland_mask.tif` from it without re-pulling GEE.
 
 ---
 
@@ -500,7 +560,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 |---------|-------|--------|------|-------|
 | 1 | W0 — Foundation (env, GEE auth, schema) | Complete | 2026-06-12 | Tier-1; env populated, schema+gee_auth wired, DEC-009/010/011 |
 | 2 | Data-source dossier + GEE ID verification | Complete | 2026-06-12 | Dossier written; 8/9 IDs verified, CHIRPS corrected (DEC-013); GEE live via service account (DEC-012) |
-| 3 | W1 — AOIs + reconciled cropland mask | Not started | | Human-reviewed mask |
+| 3 | W1 — AOIs + reconciled cropland mask | Code-complete | 2026-06-12 | Assets built/verified; DEC-014/015/016. ⚠ **human mask-review gate OPEN** (Tier-2) — review `outputs/aoi_qc/` |
 | 4 | W2 — 2025 baseline layers | Not started | | Compute-heavy |
 | 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX) | Not started | | **Parallel-eligible** |
 | 6 | W4 — Floods → damage | Not started | | **Tier-2 human gate** |
