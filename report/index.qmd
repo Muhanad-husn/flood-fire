@@ -1,0 +1,92 @@
+---
+title: "Syria 2026 Agricultural Shocks — Overview"
+subtitle: "Floods and crop fires against the 2025 record-drought baseline"
+---
+
+## The analytical spine
+
+The 2026 flooding matters because it is an **anomaly on a desertification
+trajectory**, not a recurring hazard. The baseline is drought; the shock is water
+(plus conflict-linked crop fires). This study quantifies how much of Syria's
+tentative 2026 cereal recovery the floods and fires reversed — measured as
+**damaged cropland hectares** translated into production and food-security impact,
+against the 2025 drought baseline.
+
+- **2025 — record drought (baseline).** Cereal harvest near 1.2 Mt, ~60%+ below
+  average; ~16.3M people at food-security risk.
+- **2026 — tentative recovery.** Harvest projected to rebound toward ~2.3 Mt.
+- **2026 — the shock.** April floods/hailstorms hit recovering wheat at its
+  critical final growth stage; the late-May Euphrates surge submerged thousands of
+  hectares in Deir ez-Zor and Raqqa.
+
+See [`docs/PRODUCT.md`](../docs/PRODUCT.md) for full intent and the locked research
+questions, and [`docs/STRUCTURE.md`](../docs/STRUCTURE.md) for contracts and
+validation.
+
+## How to read this report
+
+Every figure that makes a food-security or research-question claim is built **only
+from human-validated (Tier-2) damage records** — the validation gate
+(`docs/STRUCTURE.md` §6) is enforced in code via `viz.consumable_records()`.
+Unvalidated detections live in the exploration/validation notebooks
+(`notebooks/`), not here. Maps and attribution figures carry their caveats inline.
+
+```{python}
+#| label: setup
+#| echo: false
+# Put the repo root on the path so `schema` and `viz` import regardless of the
+# working directory Quarto executes from.
+import sys, pathlib
+for _cand in (pathlib.Path.cwd(), *pathlib.Path.cwd().parents):
+    if (_cand / "CLAUDE.md").exists() and (_cand / "viz").is_dir():
+        sys.path.insert(0, str(_cand))
+        break
+```
+
+## Bootstrap example — the presentation path, end to end
+
+::: {.callout-warning}
+**Illustrative placeholder, not a finding.** The figure below is built from
+synthetic records to prove the render → embed path (seaborn theming, the
+validated-only gate, caveat stamping). It is replaced by real validated outputs as
+the pipelines (W4/W5) and impact layer (W6) land.
+:::
+
+```{python}
+#| label: fig-bootstrap
+#| fig-cap: "Illustrative only — synthetic data demonstrating the figure pipeline."
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from schema import DamageRecord, Phenomenon, ValidationStatus
+from viz import (
+    apply_theme,
+    consumable_records,
+    records_to_dataframe,
+    caveat_footer,
+    CAVEATS,
+)
+
+# Synthetic records: a mix of validation states. Only the VALIDATED ones should
+# reach the chart — exactly what the report guarantees for real data.
+_demo = [
+    DamageRecord("deir_ez_zor", "2026-05-30", Phenomenon.FLOOD, "high", "S1_GRD", 1820.0, ValidationStatus.VALIDATED),
+    DamageRecord("raqqa",       "2026-05-30", Phenomenon.FLOOD, "high", "S1_GRD", 1240.0, ValidationStatus.VALIDATED),
+    DamageRecord("hasakah",     "2026-06-10", Phenomenon.FIRE,  "moderate", "S2_dNBR", 610.0, ValidationStatus.VALIDATED),
+    DamageRecord("raqqa",       "2026-05-31", Phenomenon.FLOOD, "high", "S1_GRD", 9999.0, ValidationStatus.UNVALIDATED),  # dropped by the gate
+]
+
+apply_theme()
+df = records_to_dataframe(consumable_records(_demo))   # validated only
+
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.barplot(df, x="aoi_id", y="damaged_cropland_ha", hue="phenomenon", ax=ax)
+ax.set_xlabel("Area of interest")
+ax.set_ylabel("Damaged cropland (ha)")
+ax.set_title("Damaged cropland by AOI (illustrative)")
+caveat_footer(fig, CAVEATS["validated_only"])
+plt.show()
+```
+
+The unvalidated Raqqa record (9,999 ha) is absent above — the gate dropped it.
+That is the contract every real figure in this report honours.

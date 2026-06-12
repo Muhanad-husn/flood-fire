@@ -1,0 +1,22 @@
+---
+title: "RQ1 — Flood attribution"
+---
+
+> **Status: pending W7.** Assembled once `pipelines/floods/attribution.py` produces
+> the decomposition series.
+
+**Question (`docs/PRODUCT.md` §5).** How much of the 2026 flood is rainfall-driven
+versus driven by upstream dam releases? Discriminated with CHIRPS rainfall and
+GloFAS discharge against reported Euphrates flows.
+
+Planned figure: a rainfall-vs-discharge time series across the March–June 2026
+window with the late-May Euphrates surge marked, built with `seaborn`/`matplotlib`
+via `viz`.
+
+::: {.callout-note}
+Attribution is provisional and carries explicit uncertainty
+(`viz.CAVEATS["attribution"]`). Keep causal claims proportionate to evidence
+(`docs/PRODUCT.md` §9).
+:::
+
+<!-- TODO(W7): plot CHIRPS vs GloFAS series; state confidence bounds + caveats. -->

@@ -1,0 +1,17 @@
+---
+title: "RQ2 — Fire attribution"
+---
+
+> **Status: pending W8.** Assembled once `pipelines/fires/attribution.py` produces
+> the fire–conflict overlay.
+
+**Question (`docs/PRODUCT.md` §5).** Are the 2026 crop fires concentrated along
+conflict frontlines and linked to military activity, or do they track
+accidental/agricultural burning? Tested by overlaying FIRMS/VIIRS hotspots and
+Sentinel-2 burn scars on ACLED conflict events.
+
+Planned figures: a hotspot/burn-scar vs ACLED overlay map, plus proximity-to-
+frontline and timing analysis. Maps via `geopandas` + `contextily`; an interactive
+Leaflet embed where reader pan-zoom helps.
+
+<!-- TODO(W8): overlay VIIRS/dNBR on ACLED; proximity + timing; cite sources. -->

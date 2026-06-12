@@ -1,0 +1,19 @@
+---
+title: "Food-security impact"
+---
+
+> **Status: pending W6.** This page is assembled once the food-security impact
+> layer (`food_security/impact_layer.py`) produces validated outputs.
+
+The primary question (`docs/PRODUCT.md` §5): how much of the 2026 cereal recovery
+did the floods and fires reverse, and where — `damaged_cropland_ha` → estimated
+production loss → food-security phase delta, joined to GIEWS / FEWS NET / IPC and
+referenced against the 2025 drought baseline (`docs/STRUCTURE.md` §3.3, §3.4).
+
+Planned figures (built via `viz`, validated records only):
+
+- The drought → recovery → shock **whiplash** chart (`analysis/whiplash.py`).
+- Damaged cropland and estimated production loss per AOI per event window.
+- Food-security phase delta against the 2025 baseline.
+
+<!-- TODO(W6): import validated impact records; build figures via viz helpers. -->

@@ -1,0 +1,49 @@
+# Quarto project — the static, reproducible presentation layer (DEC-008).
+#
+# Render locally:   quarto render report/
+# Preview:          quarto preview report/
+# Publish (static): quarto publish gh-pages report/   # human-run; keeps docs/ clean
+#
+# The site is self-contained HTML (no server). Leaflet embeds render client-side.
+project:
+  type: website
+  output-dir: _site
+
+# REPRODUCIBILITY / COST RULE (docs/STRUCTURE.md §6, §9): freeze computed cells so
+# `quarto render` never re-triggers expensive GEE pulls. Figures are built from
+# cached/checkpointed data and VALIDATED damage tables — never a live re-pull.
+# Re-run a page deliberately with `quarto render <page> --execute-daemon` off, or
+# delete its _freeze/ entry.
+execute:
+  freeze: auto
+  warning: false
+
+website:
+  title: "Syria 2026 Agricultural Shocks"
+  description: >-
+    How the 2026 floods and crop fires reversed Syria's tentative cereal
+    recovery, measured against the 2025 record-drought baseline.
+  navbar:
+    left:
+      - href: index.qmd
+        text: Overview
+      - href: food_security.qmd
+        text: Food security
+      - text: "Research questions"
+        menu:
+          - href: rq1.qmd
+            text: "RQ1 — Flood attribution"
+          - href: rq2.qmd
+            text: "RQ2 — Fire attribution"
+          - href: rq3.qmd
+            text: "RQ3 — Damage vs control areas"
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true
+    code-tools: true
+    embed-resources: false
+    fig-format: png
+    fig-dpi: 150

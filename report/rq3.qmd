@@ -1,0 +1,19 @@
+---
+title: "RQ3 — Damage relative to area of control"
+---
+
+> **Status: pending W9.** Assembled once `analysis/control_differential.py`
+> produces the descriptive overlay.
+
+::: {.callout-important}
+**Descriptive only.** This is a spatial overlay of 2026 cropland damage against
+*indicative* government-controlled and former AANES areas. Boundaries are contested
+and treated as indicative only. **No differential or causal claim is made** — it
+maps the distribution of damage, nothing more (`docs/PRODUCT.md` §5, §9; DEC-005).
+:::
+
+Planned figure: validated damage records overlaid on
+`aois/control_areas.geojson`, every figure stamped with
+`viz.CAVEATS["control_areas"]`.
+
+<!-- TODO(W9): overlay validated damage on indicative control areas; caveat footer. -->

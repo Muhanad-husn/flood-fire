@@ -17,4 +17,24 @@ and the downstream impacts; reference the original entry.
 
 ## New decisions
 
-_None yet._
+- **DEC-008** — **Presentation layer = a static, reproducible Quarto report**
+  (`report/`), published as self-contained HTML to GitHub Pages; **Streamlit (and
+  any running-server dashboard) explicitly rejected.**
+  - *Why:* the project is portfolio/publication output and explicitly **not** an
+    operational/real-time tool (`docs/PRODUCT.md` §4); reproducibility is a
+    first-class success criterion (§6). A static report needs no host, is
+    version-controlled, renders offline from a clean checkout, and is the credible
+    artifact the audience reads. Streamlit's strengths (live interactivity) serve
+    the operational shape this project disclaims, at a hosting/upkeep cost.
+  - *Stack:* `seaborn` (charting) on `matplotlib` (axis-level control), `geopandas`
+    + `contextily` for static thematic maps, self-contained `folium`/`leafmap`
+    Leaflet embeds where reader pan-zoom helps; `geemap` notebooks (`notebooks/`)
+    as the exploration + Tier-2 validation workbench (doubles as the gate surface,
+    §6). Shared look + enforced rules in `viz/style.py`.
+  - *Rules carried in code:* Quarto `freeze: auto` so rendering never re-triggers
+    GEE pulls (§9); report figures consume only `is_consumable()` records via
+    `viz.consumable_records()` (§6); caveats stamped via `viz.caveat_footer()`
+    (RQ3 contested boundaries, attribution uncertainty — §5, §9).
+  - *Downstream:* W6–W9 figure functions live with their modules and import `viz`;
+    a report page per analysis is filled in as validated outputs land (S8–S12).
+    `environment.yml` adds the viz deps; Quarto is a system install.

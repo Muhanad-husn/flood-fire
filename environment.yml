@@ -1,0 +1,35 @@
+# Conda environment for Syria 2026 Agricultural Shocks (docs/STRUCTURE.md §8).
+#
+# Geospatial stack via conda-forge (GDAL/rasterio/geopandas — do NOT rely on
+# native pip wheels on Windows). Recreate with:
+#
+#     conda env create -f environment.yml      # creates the `f_f` env
+#     conda activate f_f
+#     earthengine authenticate                 # interactive, human-run once (§8)
+#
+# Quarto (the report renderer, docs/STRUCTURE.md §2 presentation layer / DEC-008)
+# is a SYSTEM install, not a conda/pip package — install from https://quarto.org
+# (or `conda install -c conda-forge quarto` where available).
+name: f_f
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13
+  # --- geospatial backbone ---
+  - geopandas
+  - rasterio
+  - xarray
+  - gdal
+  - pandas
+  # --- Google Earth Engine ---
+  - earthengine-api
+  # --- visualization / presentation layer (DEC-008) ---
+  - matplotlib      # axis-level control: whiplash chart, annotated figures
+  - seaborn         # charting layer: time series, categorical/statistical figures
+  - contextily      # basemap tiles for static geopandas thematic maps
+  - folium          # self-contained Leaflet maps embedded in the report
+  - leafmap         # interactive maps (report embeds + validation workbench)
+  - geemap          # GEE-tile inspection in the Tier-2 validation notebooks
+  - jupyter         # notebook kernel for the validation workbench + Quarto execute
+  # --- testing ---
+  - pytest
