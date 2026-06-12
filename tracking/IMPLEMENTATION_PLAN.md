@@ -267,14 +267,73 @@ overall (≈3.5× in Deir ez-Zor).** The `crops>0.35` DW threshold is the main l
 
 ### Completion criteria
 
-- [ ] All three baseline artifacts exist, masked/keyed to the canonical AOIs.
-- [ ] Rainfall deficit covers exactly Nov 2024–May 2025; NDVI normal period documented.
-- [ ] Production floor disaggregation method documented and sums to the GIEWS national floor.
-- [ ] Baseline magnitudes are consistent with `docs/PRODUCT.md` §2; assumptions logged in `tracking/DECISIONS.md`.
+- [x] All three baseline artifacts exist, masked/keyed to the canonical AOIs.
+- [x] Rainfall deficit covers exactly Nov 2024–May 2025; NDVI normal period documented (2019–2024, DEC-018).
+- [x] Production floor disaggregation method documented and sums to the GIEWS national floor (1,200,000 t exact).
+- [x] Baseline magnitudes are consistent with `docs/PRODUCT.md` §2; assumptions logged in `tracking/DECISIONS.md` (DEC-017/018/019).
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: COMPLETE (2026-06-12).** All three 2025-drought baseline layers built,
+verified, and cross-checked. Tier-1 (compute/reproducibility) — no Tier-2 human
+gate in this session. The layers are mutually coherent and consistent with the
+record-drought narrative (PRODUCT §2). The mask-aligned NDVI raster confirms the
+S3 cropland mask is the load-bearing shared asset working as intended.
+
+**What was built / changed:**
+- **`baseline/build_baseline.py`** (new) — one reproducible generator, three
+  callable parts (`rainfall` / `production` / `ndvi` / `all`). Reuses the
+  `aois/build_aois.py` geedim tiled-export template (DEC-016) for the NDVI raster
+  and the DEC-015 cropland definition (DW `crops`>0.35 ∪ WorldCover cls40).
+- **`baseline/rainfall_deficit.csv`** (DEC-017) — CHIRPS Nov 2024–May 2025 vs a
+  1991–2020 (30-season) normal, AOI-mean. Deficits: Deir ez-Zor −26.1%, Raqqa
+  −19.8%, Hasakah −25.3%, Latakia −23.0%.
+- **`baseline/ndvi_anomaly_2025.tif`** (DEC-018) — S2 Mar–May peak NDVI, 2025 −
+  mean(2019–2024), 30 m EPSG:32637, cropland-union masked. Mean anomaly Hasakah
+  −0.277 → Latakia −0.054; 87.6% of cropland negative. **Gitignored (`*.tif`)** —
+  regenerate via `… build_baseline.py ndvi` (~9 min/AOI tiled pull). The
+  `_ndvi_tiles/` cache (gitignored) lets a re-mosaic skip the GEE pull.
+- **`baseline/production_baseline.csv`** (DEC-019) — 1.2 Mt floor disaggregated
+  across all 14 governorates by cropland-area share; sums to 1,200,000 t; 4 study
+  AOIs = 45% (≈544 kt). Uniform-yield assumption documented.
+- **`baseline/README.md`** updated with methods + result tables. **`tracking/
+  DECISIONS.md`** — DEC-017/018/019.
+
+**Consistency checks that passed (the headline confidence signal):**
+- NDVI valid cropland px = 26,538,663 = **2,388,480 ha = the exact S3 union total**
+  → the NDVI export grid is pixel-aligned to `aois/cropland_mask.tif`.
+- Production `cropland_ha` (300 m fraction method) matches the 30 m
+  `_mask_stats.json` union within ~2% for every study AOI.
+- Drought gradient is internally coherent: rainfall deficit, NDVI anomaly, and the
+  known cereal geography all agree (inland rainfed Hasakah hardest hit; coastal
+  Latakia least).
+
+**For the next session (S5 — W3 API clients; OR S6/S7 pipelines):**
+- S5 depends only on S1 and can run now (parallel-eligible: firms/chirps/acled/hdx
+  are disjoint files — the project's primary Workflow candidate; re-check the §7
+  rubric before fanning out). **`clients/chirps.py` must use `UCSB-CHG/CHIRPS/DAILY`**
+  (DEC-013); the deficit logic in `build_baseline._chirps_season_sum` is a working
+  reference. **ACLED moved to OAuth/`myACLED`** (legacy key deprecated, S2 handoff)
+  — `acled.py` needs a token exchange, not a key query string.
+- Baseline is ready for **S8 food-security** (needs validated S6/S7 first): read
+  the 4 study-AOI rows of `production_baseline.csv` as the per-AOI 2025 reference,
+  and `ndvi_anomaly_2025.tif` / `rainfall_deficit.csv` as drought context.
+- **Reuse for S6/S7 raster pulls:** the geedim export + local-mask pattern in
+  `build_baseline.build_ndvi_anomaly` (bilinear reproject when a `.max()`/composite
+  loses its projection; local cropland masking via `reproject` onto the tile grid)
+  is the template for flood/burn rasters.
+
+**Gotchas carried forward (still true):**
+- A single `reduceRegions`/large `reduceRegion` at 30 m over a whole governorate (or
+  all 14) **times out** server-side — loop per-feature and/or sample coarser
+  (300 m) for ratios; pull rasters tile-by-tile via geedim.
+- `.max()`/mosaic composites have **no fixed default projection** → `reduceResolution`
+  fails ("valid default projection"); use `resample('bilinear')` + `reproject` instead.
+- geedim fills out-of-mask/out-of-polygon pixels with **0, not nodata** — enforce the
+  authoritative cropland/polygon mask **locally** after download (done here).
+- `conda run -n f_f python -c "<multiline>"` still fails on newlines; backgrounded
+  `conda run` buffers stdout until exit (tqdm writes `\r` to stderr). Filter the
+  benign `gdk-pixbuf`/librsvg warning. Temp scripts go in gitignored `secrets/`.
 
 ---
 
@@ -562,7 +621,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 1 | W0 — Foundation (env, GEE auth, schema) | Complete | 2026-06-12 | Tier-1; env populated, schema+gee_auth wired, DEC-009/010/011 |
 | 2 | Data-source dossier + GEE ID verification | Complete | 2026-06-12 | Dossier written; 8/9 IDs verified, CHIRPS corrected (DEC-013); GEE live via service account (DEC-012) |
 | 3 | W1 — AOIs + reconciled cropland mask | Complete | 2026-06-12 | Assets built/verified; DEC-014/015/016. ✅ human mask-review gate PASSED (Tier-2); DW threshold confirmed |
-| 4 | W2 — 2025 baseline layers | Not started | | Compute-heavy |
+| 4 | W2 — 2025 baseline layers | Complete | 2026-06-12 | Tier-1; 3 layers built+cross-checked; DEC-017/018/019. NDVI px = exact S3 union total |
 | 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX) | Not started | | **Parallel-eligible** |
 | 6 | W4 — Floods → damage | Not started | | **Tier-2 human gate** |
 | 7 | W5 — Fires → damage | Not started | | **Tier-2 human gate** |
