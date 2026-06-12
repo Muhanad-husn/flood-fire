@@ -6,7 +6,7 @@ Detection uses the FIRMS **area** REST API with a free ``MAP_KEY``; VIIRS only
 detection — it is monthly burned-area context only, handled elsewhere.
 
 Every pull is cached and checkpointed (§9): the request window is split into
-≤10-day chunks (the area API's per-request cap), and each ``source × chunk`` is a
+≤5-day chunks (the area API's per-request cap), and each ``source × chunk`` is a
 cache unit. A retry or resume returns cached chunks without re-pulling. A local
 :class:`RateLimiter` tracks the 5,000-transaction / 10-minute budget per key and
 surfaces headroom, so the client backs off before NASA returns a 429.
@@ -33,7 +33,7 @@ _AVAIL_URL = "https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/{ke
 VIIRS_NRT = ("VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT", "VIIRS_NOAA21_NRT")
 VIIRS_SP = ("VIIRS_SNPP_SP", "VIIRS_NOAA20_SP")
 
-_MAX_DAY_RANGE = 10  # FIRMS area-API hard cap per request
+_MAX_DAY_RANGE = 5  # FIRMS area-API hard cap per request (API enforces [1..5] as of 2026-06; was 10)
 _RATE_LIMIT = 5000
 _RATE_WINDOW_S = 600
 
