@@ -395,18 +395,22 @@ logged.
   caching (resume mid-pagination). `ACLED_ADMIN1` pinned to **live** strings
   (`Deir ez Zor`/`Ar Raqqa`/`Al Hasakeh`/`Lattakia`). Live: 256/907 events for
   populated windows.
-- **`clients/hdx.py`** — HDX CKAN `package_search` (no key, live) + **ReliefWeb v2**
-  (v1 is 410-decommissioned). ReliefWeb v2 needs a pre-approved `appname` → reads
-  `[reliefweb].appname`/`RELIEFWEB_APPNAME`, else raises an actionable `HdxError`.
+- **`clients/hdx.py`** — HDX CKAN `package_search` (no key, live) + **GDELT** DOC
+  2.0 news API (`search_gdelt`, no key/no listing). **ReliefWeb was dropped**
+  (DEC-022): its API is gated to ReliefWeb-listed organizations. GDELT throttles
+  to ≤1 req/5 s and caches; unit-test-proven, but a live 200 wasn't obtainable
+  from this env's IP (GDELT rate-limited it after the probe burst — re-verify at S8).
 - **`clients/test_clients.py`** (new) — 22 hermetic Tier-1 tests (cache, config,
   rate limiter, all four clients; tmp_path-isolated). **`README.md`** §3 rewritten
   for the secrets.toml model. **`tracking/DECISIONS.md`** — DEC-020, DEC-021.
 
 **Two human prerequisites surfaced (not blockers for S5; needed before the
 consumers pull live):**
-1. **ReliefWeb appname** — register at apidoc.reliefweb.int/parameters#appname and
-   set `[reliefweb].appname` **if** ReliefWeb corroboration is wanted (S8 context).
-   HDX alone covers the dataset need; ReliefWeb is narrative-only.
+1. **GDELT live re-verification** — ReliefWeb was replaced by GDELT (DEC-022, no
+   key needed). The client is unit-test-proven but GDELT rate-limited this env's IP
+   during S5, so a live 200 payload wasn't captured here. Re-confirm a live GDELT
+   pull from an un-throttled IP when S8 first uses news corroboration. (No human
+   credential action — GDELT needs none.)
 2. **ACLED data coverage** — the live ACLED archive currently has **no 2026 Syria
    data** (the project's simulated "today" 2026-06-12 is ahead of real ACLED
    coverage), so `fetch_events(..., 2026-…)` returns 0 rows *correctly*. The client
@@ -424,8 +428,7 @@ consumers pull live):**
 - **CHIRPS client supersedes the inline `build_baseline._chirps_season_sum`** for
   S9/RQ1 — `chirps.fetch_daily()` returns the cached daily series; sum it for the
   season total.
-- ACLED (S10) and HDX/ReliefWeb (S8) are ready to import; mind the two prerequisites
-  above.
+- ACLED (S10) and HDX/GDELT (S8) are ready to import; mind the two notes above.
 
 **Gotchas carried forward (still true):**
 - `conda run -n f_f python -c "<multiline>"` fails ("arguments contain newlines") —
@@ -688,7 +691,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 2 | Data-source dossier + GEE ID verification | Complete | 2026-06-12 | Dossier written; 8/9 IDs verified, CHIRPS corrected (DEC-013); GEE live via service account (DEC-012) |
 | 3 | W1 — AOIs + reconciled cropland mask | Complete | 2026-06-12 | Assets built/verified; DEC-014/015/016. ✅ human mask-review gate PASSED (Tier-2); DW threshold confirmed |
 | 4 | W2 — 2025 baseline layers | Complete | 2026-06-12 | Tier-1; 3 layers built+cross-checked; DEC-017/018/019. NDVI px = exact S3 union total |
-| 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX) | Complete | 2026-06-12 | Tier-1; 4 clients on shared cache/config layer; 22 tests pass; FIRMS/ACLED/CHIRPS/HDX live-verified; DEC-020/021. ⚠ ReliefWeb appname + ACLED 2026-coverage human notes |
+| 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX+GDELT) | Complete | 2026-06-13 | Tier-1; 4 clients on shared cache/config layer; 23 tests pass; FIRMS/ACLED/CHIRPS/HDX live-verified; ReliefWeb→GDELT (DEC-022); DEC-020/021. ⚠ GDELT live re-verify + ACLED 2026-coverage notes |
 | 6 | W4 — Floods → damage | Not started | | **Tier-2 human gate** |
 | 7 | W5 — Fires → damage | Not started | | **Tier-2 human gate** |
 | 8 | W6 — Food-security impact layer | Not started | | Validated-only |

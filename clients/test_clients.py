@@ -284,12 +284,31 @@ def test_hdx_search_caches_and_no_repull(tmp_path, monkeypatch):
     assert get.n == 1
 
 
-def test_reliefweb_search_caches(tmp_path, monkeypatch):
+def test_gdelt_search_caches_and_no_repull(tmp_path, monkeypatch):
     import clients.hdx as hdx
     monkeypatch.setattr(hdx, "_cache", Cache("hdx", root=tmp_path))
-    post = Counter(lambda *a, **k: FakeResp(json_data={"data": [{"id": 1}]}))
-    monkeypatch.setattr(hdx.requests, "post", post)
-    out = hdx.search_reliefweb("Deir ez-Zor floods")
-    assert out == [{"id": 1}]
-    hdx.search_reliefweb("Deir ez-Zor floods")
-    assert post.n == 1
+    monkeypatch.setattr(hdx.time, "sleep", lambda *_: None)  # no real throttling in tests
+    get = Counter(lambda *a, **k: FakeResp(json_data={"articles": [{"title": "Euphrates floods"}]}))
+    monkeypatch.setattr(hdx.requests, "get", get)
+
+    out = hdx.search_gdelt("flood OR Euphrates", "2026-04-01", "2026-06-30")
+    assert out == [{"title": "Euphrates floods"}]
+    assert get.n == 1
+    hdx.search_gdelt("flood OR Euphrates", "2026-04-01", "2026-06-30")  # cache hit
+    assert get.n == 1
+
+
+def test_gdelt_retries_once_on_429(tmp_path, monkeypatch):
+    import clients.hdx as hdx
+    monkeypatch.setattr(hdx, "_cache", Cache("hdx", root=tmp_path))
+    monkeypatch.setattr(hdx.time, "sleep", lambda *_: None)
+    seq = [FakeResp(status=429, text="slow down"),
+           FakeResp(json_data={"articles": [{"title": "ok"}]})]
+    monkeypatch.setattr(hdx.requests, "get", lambda *a, **k: seq.pop(0))
+    assert hdx.search_gdelt("fire", "2026-05-01", "2026-07-31") == [{"title": "ok"}]
+
+
+def test_gdelt_datetime_spans_full_days():
+    import clients.hdx as hdx
+    assert hdx._gdelt_datetime("2026-04-01", end=False) == "20260401000000"
+    assert hdx._gdelt_datetime("2026-06-30", end=True) == "20260630235959"
