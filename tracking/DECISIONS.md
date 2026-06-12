@@ -272,9 +272,35 @@ and the downstream impacts; reference the original entry.
     `Ar Raqqa`, `Al Hasakeh`, `Lattakia` — pinned in `acled.ACLED_ADMIN1` for S10.
   - **HDX** — public CKAN `package_search`, **no key**; live (returns
     `hdx-hapi-food-security`, `acaps_syria_core_dataset`, …).
-  - **ReliefWeb** — **v1 decommissioned (HTTP 410); migrated to v2**, which
-    requires a **pre-approved `appname`** (HTTP 403 otherwise). `appname` reads
-    from `[reliefweb].appname`/`RELIEFWEB_APPNAME`; until one is registered the
-    client raises an actionable `HdxError` with the registration URL. **Human
-    action:** register an appname at apidoc.reliefweb.int if ReliefWeb corroboration
-    is needed (HDX covers the dataset need without it).
+  - **ReliefWeb** — **v1 decommissioned (HTTP 410); v2 requires a pre-approved
+    `appname`** restricted to organizations listed with ReliefWeb (HTTP 403
+    otherwise). **Superseded by DEC-022** — ReliefWeb is dropped for GDELT.
+
+- **DEC-022** (S5/W3) — **ReliefWeb dropped; replaced by GDELT for news
+  corroboration.** ReliefWeb's API is gated to organizations *listed with
+  ReliefWeb* (DEC-021), so it is removed. `clients/hdx.py` keeps HDX and gains
+  `search_gdelt()` over the GDELT DOC 2.0 news API (`api.gdeltproject.org`,
+  **no key, no listing**), queryable by keyword + `sourcecountry:` + date window,
+  cached per query (§9).
+  - *Why GDELT:* it is the closest no-auth equivalent for the role ReliefWeb
+    served — narrative/news corroboration of the flood and fire event windows
+    (dossier §4.4) — and removes the credential/registration barrier entirely.
+    HDX (datasets) plus the already-catalogued GIEWS/FEWS NET/IPC (S8) cover the
+    food-security narrative; GDELT restores the dedicated news-search angle.
+  - *Caveats carried in code:* GDELT's public endpoint allows **≤1 request / 5 s**
+    — the client throttles uncached calls and retries a 429 with escalating
+    backoff (4 attempts); the cache means re-runs never re-spend the budget. Like
+    ACLED, GDELT has **no articles for a window ahead of real-world time** (the
+    simulated 2026 date), so a 2026-window query returns empty until that date
+    actually arrives — a data-availability property, not a client bug.
+  - *Verification status:* the client is unit-test-proven (cache hit/miss,
+    no-re-pull, 429-backoff retry, date-span formatting — `clients/test_clients.py`,
+    23 tests). A **live 200 payload could not be obtained from this environment's
+    egress IP** (GDELT rate-limited it beyond the documented 5 s after the probe
+    burst); the endpoint is confirmed reachable (its own 429 body) and the request
+    shape matches the API. Re-verify the live pull from an un-throttled IP at S8.
+  - *Recommended §5 / §7 edit (flagged, not silently applied — per Working Rules,
+    as with [[DEC-013]]):* `docs/STRUCTURE.md` §5 row "HDX / ReliefWeb" and §7 W3
+    "HDX/ReliefWeb" should read **"HDX / GDELT"**. Left to the human.
+  - *Downstream:* S8 (food-security context) uses `search_hdx` + `search_gdelt`;
+    no ReliefWeb config remains (`[reliefweb]` removed from README/secrets).

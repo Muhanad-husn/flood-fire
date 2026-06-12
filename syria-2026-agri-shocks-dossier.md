@@ -94,10 +94,10 @@ All accessed through Earth Engine (`earthengine-api`), auth via `clients/gee_aut
 - **Use:** Euphrates-reach discharge series for the flood window, compared against reported flows (~2,000 m³/s vs 200–250 in drought years — `docs/PRODUCT.md` §2) to discriminate rainfall vs upstream release. **Proportionate claims only** (§9).
 - **License:** Copernicus — free & open (licence acceptance in CDS/EWDS).
 
-### 4.4 HDX / ReliefWeb — corroborating reports (context)
-- **HDX:** Humanitarian Data Exchange API (CKAN-based) — <https://data.humdata.org/>. Datasets vary in license per provider (often CC-BY / CC-BY-IGO).
-- **ReliefWeb:** public API <https://apidoc.reliefweb.int/> — situation reports / news for narrative corroboration of event windows and impact. Attribution per source.
-- **Use:** S5 `hdx.py`; corroboration, not primary measurement. Cache (§9).
+### 4.4 HDX / GDELT — corroborating context (context)
+- **HDX:** Humanitarian Data Exchange API (CKAN-based, no key) — <https://data.humdata.org/>. Datasets vary in license per provider (often CC-BY / CC-BY-IGO). Live-verified (S5).
+- **GDELT:** Global Database of Events, Language & Tone — DOC 2.0 news API <https://api.gdeltproject.org/api/v2/doc/doc>, **no key/no listing**, queryable by keyword + `sourcecountry:` + date window. News corroboration of the flood/fire event windows. **Replaces ReliefWeb** (DEC-022): the ReliefWeb API restricted access to organizations *listed with ReliefWeb*; GDELT has no such barrier. **Rate limit: ≤1 request / 5 s** on the public endpoint (the S5 client throttles + caches). License: GDELT is open; cite article sources per their own terms.
+- **Use:** S5 `hdx.py` (`search_hdx`, `search_gdelt`); corroboration, not primary measurement. Cache (§9).
 
 ### 4.5 GIEWS / FEWS NET / IPC — food-security baseline & join (W2, W6)
 - **GIEWS (FAO):** country briefs / production figures — the ~1.2 Mt 2025 cereal floor and ~2.3 Mt 2026 rebound projection (`docs/PRODUCT.md` §2). Web + data download.
@@ -149,6 +149,6 @@ These are the **named** references a human compares Tier-2 outputs against. No a
 | Dynamic World, ESA WorldCover | CC-BY-4.0 | Yes, with attribution |
 | MODIS MCD64A1, FIRMS | NASA — public domain | Yes |
 | ACLED | Proprietary — Terms of Use, attribution | **Restricted** — cite, don't republish raw |
-| HDX / ReliefWeb / GIEWS / FEWS NET / IPC | Per-provider (often CC-BY / open) | Confirm per artifact |
+| HDX / GDELT / GIEWS / FEWS NET / IPC | Per-provider (often CC-BY / open) | Confirm per artifact |
 
 > Licenses above are working assumptions for the well-established open sources; **confirm the exact licence text at each source before any publication** (proportionate-claims discipline). ACLED in particular restricts redistribution.

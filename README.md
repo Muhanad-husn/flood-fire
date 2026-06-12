@@ -64,9 +64,6 @@ password = "..."              # env override: ACLED_KEY
 
 [firms]
 map_key = "..."               # env override: MAP_KEY
-
-[reliefweb]                   # optional; ReliefWeb v2 needs a pre-approved appname
-appname = "..."               # env override: RELIEFWEB_APPNAME
 ```
 
 | Source | Config | Where to get it |
@@ -74,8 +71,8 @@ appname = "..."               # env override: RELIEFWEB_APPNAME
 | Earth Engine | `EE_PROJECT` env + service-account key in `secrets/` (DEC-012) | Google Cloud console |
 | NASA FIRMS (VIIRS 375 m) | `[firms].map_key` / `MAP_KEY` | https://firms.modaps.eosdis.nasa.gov/api/map_key/ |
 | ACLED (RQ2) | `[acled].username`+`password` / `ACLED_EMAIL`+`ACLED_KEY` | https://acleddata.com/register/ (OAuth2) |
-| ReliefWeb (context) | `[reliefweb].appname` / `RELIEFWEB_APPNAME` | https://apidoc.reliefweb.int/parameters#appname |
 | HDX (datasets) | none — public CKAN API | https://data.humdata.org/ |
+| GDELT (news context) | none — public DOC 2.0 API (≤1 req/5 s) | https://api.gdeltproject.org/ |
 
 GloFAS (CDS/EWDS API) and Copernicus EMS (EMSR811) access paths are catalogued in
 the companion dossier (`syria-2026-agri-shocks-dossier.md` §4).
