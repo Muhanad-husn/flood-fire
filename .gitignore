@@ -19,6 +19,9 @@ env/
 
 # --- Secrets / credentials (never commit) ---
 # FIRMS MAP_KEY, ACLED key, Copernicus account, GEE service-account JSON, etc.
+# Ignore the whole secrets/ dir: service-account keys carry arbitrary filenames
+# (e.g. <project>-<hash>.json) that the patterns below would miss.
+secrets/
 *.key
 *credentials*.json
 *service-account*.json
@@ -56,3 +59,4 @@ outputs/**/*.jpg
 Thumbs.db
 .vscode/
 .idea/
+secrets/g_auth.json

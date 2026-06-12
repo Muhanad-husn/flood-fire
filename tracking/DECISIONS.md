@@ -76,3 +76,39 @@ and the downstream impacts; reference the original entry.
     rate-limit-safe.
   - *Downstream:* every GEE-touching module calls `gee_auth.initialize()` once at
     entry; first-run steps documented in the root `README.md`.
+
+- **DEC-012** (S2) — **GEE auth supports a service-account key as the preferred,
+  non-interactive path** (`clients/gee_auth.py`), falling back to cached user
+  credentials (DEC-011). Key discovery: `EE_SERVICE_ACCOUNT_KEY` env var, else a
+  single `service_account`-type JSON in `secrets/` (gitignored). Project defaults
+  to the key's `project_id` when `EE_PROJECT` is unset.
+  - *Why:* Google is **blocking the `drive` OAuth scope for the default Earth
+    Engine client ID**, so the interactive `earthengine authenticate` flow was
+    failing at sign-in on this machine. A service account sidesteps the consent
+    screen entirely, is fully non-interactive (satisfies DEC-011's "never launch
+    the interactive flow in code"), and directly serves S12's clean-checkout
+    reproducibility criterion (PRODUCT §6). Verified live: initialized project
+    `rich-stratum-429021-u4` and read real S1/CHIRPS/WorldCover data 2026-06-12.
+  - *Extends, does not reopen, DEC-011:* the `EE_PROJECT`/idempotent/no-retry-auth
+    contract is unchanged; the service-account branch is an added non-interactive
+    source. Key lives in `secrets/` (now wholly gitignored — see note below).
+  - *Downstream:* a clean checkout needs only the key file (or
+    `EE_SERVICE_ACCOUNT_KEY`); no browser step. README first-run note to be
+    updated to mention the service-account option (carry into a later session).
+  - *Security:* `.gitignore` updated to ignore the entire `secrets/` dir — the
+    service-account filename (`<project>-<hash>.json`) matched none of the prior
+    patterns and would otherwise have been committable.
+
+- **DEC-013** (S2) — **CHIRPS daily GEE ID corrected to `UCSB-CHG/CHIRPS/DAILY`**
+  (hyphen), replacing §5's `UCSB/CHG/CHIRPS/DAILY` (all slashes), which **does not
+  resolve** in the live catalog (2026-06-12). **Drift vs `docs/STRUCTURE.md` §5 is
+  flagged here, not silently edited in §5** (Working Rules / CLAUDE.md).
+  - *Evidence:* `ee.data.getAsset("UCSB/CHG/CHIRPS/DAILY")` → *asset not found*;
+    `UCSB-CHG/CHIRPS/DAILY` loads — 31 daily images Jan 2025, band `precipitation`,
+    ~5566 m, real value over Deir ez-Zor. The provider namespace is `UCSB-CHG`.
+  - *Downstream:* S4 (`baseline/rainfall_deficit.csv`) and S5 (`clients/chirps.py`)
+    must use `UCSB-CHG/CHIRPS/DAILY`. **Human action:** decide whether to update
+    `docs/STRUCTURE.md` §5 to the corrected ID (recommended) or annotate it.
+  - *Other §5 IDs:* the remaining 8 verified exactly as written (see dossier §2).
+    Note `JRC/GSW1_4/GlobalSurfaceWater` is an **Image**, not a collection; the GEE
+    `FIRMS` collection is **MODIS-derived** (VIIRS detection stays on the API).
