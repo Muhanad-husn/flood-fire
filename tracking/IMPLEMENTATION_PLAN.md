@@ -360,14 +360,80 @@ S3 cropland mask is the load-bearing shared asset working as intended.
 
 ### Completion criteria
 
-- [ ] Each client reads its key/config from env and fails clearly when absent.
-- [ ] Each client caches and checkpoints; a simulated retry does **not** re-pull (unit-tested).
-- [ ] FIRMS client uses VIIRS 375 m (not MODIS); rate-limit headroom is surfaced.
-- [ ] Unit tests pass for all four clients (Tier-1 — agent may self-certify).
+- [x] Each client reads its key/config from env **and `secrets/secrets.toml`** (DEC-020) and fails clearly when absent (`ConfigError` with remedy; unit-tested).
+- [x] Each client caches and checkpoints; a simulated retry does **not** re-pull (unit-tested per client + live-verified for FIRMS/ACLED/CHIRPS).
+- [x] FIRMS client uses VIIRS 375 m (not MODIS); rate-limit headroom is surfaced (`rate_limit_headroom()`, local rolling-window tracker).
+- [x] Unit tests pass for all four clients — **22 passed** (`pytest clients/`), Tier-1 self-certified.
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: COMPLETE (2026-06-12).** All four clients built on one shared
+config+cache layer, unit-tested (22 Tier-1 tests pass), and **live-verified**
+against the real APIs for FIRMS, ACLED, CHIRPS, and HDX. Tier-1 only — no Tier-2
+gate. DEC-020 (secrets.toml + cache design) and DEC-021 (confirmed access models)
+logged.
+
+**What was built / changed:**
+- **`clients/_common.py`** (new) — the shared layer (DEC-020): `secret()` (env →
+  secrets.toml → `ConfigError`), `Cache` (one file per request unit under
+  gitignored `cache/<ns>/`; `.cached()` is the §9 no-re-pull checkpoint),
+  `RateLimiter` (persisted rolling-window budget; only real fetches consume it),
+  and `load_aois()`/`aoi_bbox_str()` (stdlib-JSON AOI loader so bbox clients need
+  no geopandas; §3.1 — no AOI redefined).
+- **`clients/firms.py`** — VIIRS 375 m area API (DEC-006/021). Window split into
+  ≤10-day chunks × 3 VIIRS NRT products (`*_SP` for archive); each chunk a cache
+  unit. `rate_limit_headroom()` surfaces the 5,000/10-min budget (multi-day = N
+  transactions). Live: **103 detections over Hasakah** 06-08..10, headroom −9,
+  retry fully cached.
+- **`clients/chirps.py`** — `UCSB-CHG/CHIRPS/DAILY` (DEC-013) daily AOI-mean precip
+  series, reduced server-side in one pass, cached per `(aoi_id,start,end)`. AOI-mean
+  not cropland-masked (5.5 km pixels, DEC-017). Live: 10-day Deir ez-Zor pull, retry
+  cached.
+- **`clients/acled.py`** — myACLED **OAuth2 password grant** (DEC-021): token
+  lifecycle (access 24 h / refresh 14 d) cached in `cache/acled/_token.json`
+  (never in secrets.toml), 401→refresh→retry, `event_date BETWEEN` filter, per-page
+  caching (resume mid-pagination). `ACLED_ADMIN1` pinned to **live** strings
+  (`Deir ez Zor`/`Ar Raqqa`/`Al Hasakeh`/`Lattakia`). Live: 256/907 events for
+  populated windows.
+- **`clients/hdx.py`** — HDX CKAN `package_search` (no key, live) + **ReliefWeb v2**
+  (v1 is 410-decommissioned). ReliefWeb v2 needs a pre-approved `appname` → reads
+  `[reliefweb].appname`/`RELIEFWEB_APPNAME`, else raises an actionable `HdxError`.
+- **`clients/test_clients.py`** (new) — 22 hermetic Tier-1 tests (cache, config,
+  rate limiter, all four clients; tmp_path-isolated). **`README.md`** §3 rewritten
+  for the secrets.toml model. **`tracking/DECISIONS.md`** — DEC-020, DEC-021.
+
+**Two human prerequisites surfaced (not blockers for S5; needed before the
+consumers pull live):**
+1. **ReliefWeb appname** — register at apidoc.reliefweb.int/parameters#appname and
+   set `[reliefweb].appname` **if** ReliefWeb corroboration is wanted (S8 context).
+   HDX alone covers the dataset need; ReliefWeb is narrative-only.
+2. **ACLED data coverage** — the live ACLED archive currently has **no 2026 Syria
+   data** (the project's simulated "today" 2026-06-12 is ahead of real ACLED
+   coverage), so `fetch_events(..., 2026-…)` returns 0 rows *correctly*. The client
+   is proven against 2024/2023 windows. **S10/RQ2 must check ACLED's live max date
+   before relying on the 2026 fire-window pull** — if 2026 isn't yet ingested, the
+   conflict overlay can't be computed and that's a data-availability gap to flag,
+   not a code bug.
+
+**For the next sessions (S6 floods / S7 fires — both depend on S3+S2, not S5):**
+- S6/S7 can start now; the only S5 client either consumes is **`firms.py`** (S7
+  fires) and **`chirps.py`** (S6 flood context / S9). Call `from clients.firms
+  import fetch_hotspots; fetch_hotspots("hasakah", start, end)` — bbox is resolved
+  from the canonical AOIs automatically. **FIRMS NRT only covers ~last 2 months**
+  — fine for the 2026 windows now, but a much-later re-run needs `VIIRS_*_SP`.
+- **CHIRPS client supersedes the inline `build_baseline._chirps_season_sum`** for
+  S9/RQ1 — `chirps.fetch_daily()` returns the cached daily series; sum it for the
+  season total.
+- ACLED (S10) and HDX/ReliefWeb (S8) are ready to import; mind the two prerequisites
+  above.
+
+**Gotchas carried forward (still true):**
+- `conda run -n f_f python -c "<multiline>"` fails ("arguments contain newlines") —
+  write a temp script (gitignored `secrets/`) and run that; for `clients` imports
+  set `PYTHONPATH=.` (the script's own dir is not the repo root).
+- Filter the benign `gdk-pixbuf`/librsvg warning on every `conda run`.
+- `cache/` and `secrets/` are gitignored — live pulls and creds never commit; a
+  clean checkout re-pulls (cache is a reproducibility checkpoint, not a source).
 
 ---
 
@@ -622,7 +688,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 2 | Data-source dossier + GEE ID verification | Complete | 2026-06-12 | Dossier written; 8/9 IDs verified, CHIRPS corrected (DEC-013); GEE live via service account (DEC-012) |
 | 3 | W1 — AOIs + reconciled cropland mask | Complete | 2026-06-12 | Assets built/verified; DEC-014/015/016. ✅ human mask-review gate PASSED (Tier-2); DW threshold confirmed |
 | 4 | W2 — 2025 baseline layers | Complete | 2026-06-12 | Tier-1; 3 layers built+cross-checked; DEC-017/018/019. NDVI px = exact S3 union total |
-| 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX) | Not started | | **Parallel-eligible** |
+| 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX) | Complete | 2026-06-12 | Tier-1; 4 clients on shared cache/config layer; 22 tests pass; FIRMS/ACLED/CHIRPS/HDX live-verified; DEC-020/021. ⚠ ReliefWeb appname + ACLED 2026-coverage human notes |
 | 6 | W4 — Floods → damage | Not started | | **Tier-2 human gate** |
 | 7 | W5 — Fires → damage | Not started | | **Tier-2 human gate** |
 | 8 | W6 — Food-security impact layer | Not started | | Validated-only |
