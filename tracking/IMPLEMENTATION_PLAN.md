@@ -876,14 +876,78 @@ RQ2 method: overlay FIRMS/VIIRS hotspots and Sentinel-2 burn scars (from S7, val
 
 ### Completion criteria
 
-- [ ] ACLED events joined to validated hotspots/scars over the correct AOIs/window.
-- [ ] Proximity-to-frontline and timing analysis produced.
-- [ ] Conflict-linkage framed proportionately with explicit caveats (PRODUCT.md §9).
-- [ ] Method recorded in `tracking/DECISIONS.md`.
+- [x] ACLED events joined to validated hotspots/scars over the correct AOIs/window. *(Joined over the **2025** demo window — the latest ACLED-covered fire season — because live ACLED has **zero 2026 Syria data** (max event_date 2025-06-13). The 2026 study overlay is reported as a data-availability gap, not computed. DEC-036.)*
+- [x] Proximity-to-frontline and timing analysis produced. *(Cropland-restricted spatial null + space-time coincidence (5 km, ±7 d) + daily Spearman; `proximity_summary.csv`, `daily_counts_*_2025.csv`, figure.)*
+- [x] Conflict-linkage framed proportionately with explicit caveats (PRODUCT.md §9). *(Cropland null is the load-bearing control; finding states co-location ≠ cause; 2025 fires read as agricultural/seasonal, not conflict-concentrated. `RQ2_FINDING.md`.)*
+- [x] Method recorded in `tracking/DECISIONS.md`. *(DEC-036.)*
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: COMPLETE (2026-06-13).** Tier-1 (reasoning analysis; no Tier-2 gate — RQ2
+consumes the validated S7 fire detections read-only, emits no schema records, sets no
+`validation_status`). The full fire–conflict attribution method is built, **18 Tier-1
+tests pass** (`pytest pipelines/fires/test_attribution.py`; 48 with clients+schema), and
+it is **demonstrated end-to-end on the latest ACLED-covered window**. DEC-036 logged.
+
+**The constraint that shaped the session (probed live, 2026-06-13):** the recurring
+S5/S7/S9 warning is confirmed — **live ACLED Syria coverage ends 2025-06-13**, exactly
+one year behind the simulated "today". So the **2026 study fire window has 0 ACLED
+events** and its conflict overlay **cannot be computed**. Per the session decision
+("build + demo on latest window"), the method is demonstrated on **May 1 – Jun 13 2025**
+(the analogous, fully-covered fire season) over the same fire AOIs, with VIIRS `*_SP`
+archive hotspots — framed as a **method demo on baseline/context (DEC-001), not a study
+finding**. Re-running over `STUDY_WINDOW` yields the real 2026 result, no code change,
+once ACLED ingests 2026 Syria data.
+
+**What was built:**
+- **`pipelines/fires/attribution.py`** (DEC-036) — pure-numpy distance core
+  (`nearest_distance_km`, temporal-windowed nearest, proximity/coincidence summaries,
+  Spearman, event-type composition) + loaders over the cached FIRMS/ACLED clients +
+  a **cropland-restricted spatial null** (`cropland_null_distance_km`, samples the
+  DEC-015 union mask within each AOI footprint, fixed seed). Driver runs the 2025 demo +
+  the 2026 study-window gap check. Run: `PYTHONPATH=. python -m pipelines.fires.attribution`.
+- **`pipelines/fires/test_attribution.py`** — 18 hermetic Tier-1 tests (distance maths,
+  temporal windowing, proximity fractions, coincidence radius, daily alignment, Spearman
+  edge cases, armed-type subset, composition, polygon-coord flattening).
+- **Outputs:** `outputs/fires/rq2_attribution/` (`RQ2_FINDING.md`, `proximity_summary.csv`,
+  `daily_counts_{hasakah,latakia}_2025.csv`, `conflict_types_near_fire_*_2025.csv`) and
+  `outputs/figures/w8_rq2_fire_conflict.png` (gitignored, DEC-008).
+
+**The load-bearing analytical choice — the cropland null.** A bare "% within 5 km" is
+indefensible: fires (on cropland) and conflict (in inhabited belts) co-locate by geography
+alone. RQ2 compares each fire's distance-to-nearest-**armed**-conflict against the distance
+from random *cropland* pixels to the same events. Fires "concentrate along frontlines" only
+if closer than that baseline.
+
+**Demonstration finding (2025 — baseline/context, NOT a study result):** in **both** fire
+AOIs, crop fires are **no closer** to armed conflict than cropland is in general —
+Hasakah 14.8 km (fire median) vs 15.8 km (null); Latakia 4.9 vs 3.6 km; coincidence 2% /
+5%; daily ρ=+0.36 / +0.08. Latakia's superficial "55% within 5 km" is exposed by the null
+as a **small-AOI geography artifact**, not a frontline signal. So the 2025 cropland fires
+read as **agricultural/seasonal, not conflict-concentrated** — the proportionate finding
+(§9). Co-location is never asserted as cause; PAX Sentinel-2 is the descriptive precedent.
+
+**⚠ Flag for S12 (CLAUDE.md — not silently resolved):** **RQ2 cannot be completed against
+real 2026 conflict data until ACLED ingests 2026 Syria events** (max event_date
+2025-06-13). S12 should record this as a known data-availability gap; the method + 2025
+demo stand, the 2026 study overlay is deferred. This mirrors the S5 ACLED-coverage note —
+it is a real-world data-latency property of the simulated date, not a code bug.
+
+**For the next sessions (S11 RQ3 / S12 verification — both independent of S10):**
+- **S11/RQ3** consumes validated damage + `aois/control_areas.geojson`, descriptive only
+  (DEC-005). Unrelated to S10. If it includes flood damage, carry the **Hasakah-June flag**
+  (DEC-035) forward so artifact hectares aren't mapped as real flooding.
+- **S12** should (a) log the **RQ2 ACLED-2026 gap** (above) and the **Hasakah-June flood
+  flag** (DEC-035) as known gaps; (b) confirm the RQ2 caches reproduce from a clean
+  checkout (FIRMS `*_SP` + ACLED token; `cache/` is gitignored). The 2025 demo hotspots
+  are baseline/context, never `DamageRecord`s.
+
+**Gotchas carried forward (still true + new):** `PYTHONPATH=.` for `pipelines`/`clients`
+imports; filter the benign `gdk-pixbuf`/librsvg warning. **New:** plain `conda run -n f_f`
+(capturing) **crashes on a UnicodeEncodeError** when the script prints non-cp1252 chars
+(e.g. `⚠`, `→`, `³`) — use **`conda run --no-capture-output -n f_f`** (streams directly)
+for any script that prints unicode, or keep stdout ASCII (the module's `__main__` prints
+are ASCII-safe; unicode lives only in the utf-8 files it writes).
 
 ---
 
@@ -975,6 +1039,6 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 7 | W5 — Fires → damage | Complete | 2026-06-13 | **Tier-2 gate CLOSED by human** (all 8 records `validated` vs EMSR811). Hasakah 2026 = 3,758 ha burned cropland (union); Latakia 2026 ≈ 1 ha (July future). DEC-030/031/032. Isolated worktree (parallel w/ S6) |
 | 8 | W6 — Food-security impact layer | Complete | 2026-06-13 | Tier-1; validated-only join, 12 tests pass; DEC-033 (union-headline normalisation + flood peak-date no-double-count + conservative drought-floor yield). Study loss ≈24.4 kt (~2.0% of national floor) |
 | 9 | W7 — RQ1 flood attribution | Complete | 2026-06-13 | Tier-1; CHIRPS vs GloFAS decomposition (new `clients/glofas.py` via EWDS `cems-glofas-historical`); 9 tests pass; DEC-034/035. **Finding:** Euphrates AOIs = upstream/transboundary (June ~1,600 m³/s plateau, 0 rain); natural-vs-managed = LOW conf. **⚠ Hasakah June S6 records flagged: no water source (dry Khabur + 0 rain) → likely DEC-023 SAR harvest artifact — recommend S6/S12 re-exam** |
-| 10 | W8 — RQ2 fire attribution | Not started | | Reasoning-heavy |
+| 10 | W8 — RQ2 fire attribution | Complete | 2026-06-13 | Tier-1; cropland-null + space-time + temporal overlay; 18 tests pass; DEC-036. **⚠ Live ACLED has no 2026 Syria data (max 2025-06-13) → 2026 study overlay deferred (gap flagged for S12); method built + demonstrated on 2025 window.** Demo finding: 2025 cropland fires **no closer** to armed conflict than cropland baseline → agricultural/seasonal, not conflict-concentrated |
 | 11 | W9 — RQ3 descriptive control overlay | Not started | | Descriptive only |
 | 12 | W10 — Verification / reproducibility | Not started | | Audit gate |
