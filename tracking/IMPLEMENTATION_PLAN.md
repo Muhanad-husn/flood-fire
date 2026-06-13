@@ -671,14 +671,73 @@ cropland cross-check at coarse scale (100 m) for Hasakah.
 
 ### Completion criteria
 
-- [ ] Layer refuses any non-`validated` record (unit-tested against the gate).
-- [ ] Production-loss → phase-delta chain documented and joined to GIEWS/FEWS NET/IPC vs the 2025 baseline.
-- [ ] Impact outputs in `outputs/` carry explicit confidence/caveats.
-- [ ] Yield and phase-mapping assumptions recorded in `tracking/DECISIONS.md`.
+- [x] Layer refuses any non-`validated` record (unit-tested against the gate). *(`gate_records(strict=True)` raises `ValidationGateError`; tests `test_gate_refuses_unvalidated_record`, `test_gate_refuses_rejected_record`, `test_compute_impact_refuses_unvalidated_csv`.)*
+- [x] Production-loss → phase-delta chain documented and joined to GIEWS/FEWS NET/IPC vs the 2025 baseline. *(ha → loss at 2025 baseline yield → loss-%-of-baseline → indicative non-IPC pressure band; GIEWS/FEWS NET/IPC named as authoritative phase sources. `impact_by_aoi.csv`, `impact_national.csv`.)*
+- [x] Impact outputs in `outputs/` carry explicit confidence/caveats. *(`IMPACT_README.md` + `caveat_footer` on the figure: conservative-yield lower bound, not-an-IPC-phase, pipeline caveats inherited.)*
+- [x] Yield and phase-mapping assumptions recorded in `tracking/DECISIONS.md`. *(DEC-033.)*
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: COMPLETE (2026-06-13).** Tier-1 — the food-security impact layer joins the
+**human-validated** flood (63) + fire (8) records into estimated cereal-production
+loss and an indicative food-security pressure vs the 2025 drought baseline. No Tier-2
+gate in this session (it *consumes* the closed S6/S7 gates; it sets no
+`validation_status`). 12 Tier-1 tests pass (`pytest food_security/`). DEC-033 logged.
+
+**The cross-pipeline drift flagged before S8 is RESOLVED (DEC-033).** The user chose
+the **union-headline + intersection-low** convention (the fires single-headline shape,
+which avoids the flood double-count footgun). The layer normalises both pipelines on
+read: floods select `…+cropland_union` rows (intersection rows = low bound); fires read
+the `S2_dNBR` headline (intersection from `fire_damage_sensitivity.csv`, **2026 study
+rows only** — 2025 EMSR811 anchor excluded, DEC-001).
+
+**Two load-bearing analytical choices (DEC-033):**
+1. **No flood temporal double-count.** Flood records are per event-date; a `persistent`
+   pixel recurs across dates, so summing hectares across dates double-counts it. Headline
+   flood-affected cropland per AOI = the **peak single event-date** extent
+   (transient+persistent) — conservative, matches the S6 headlines. A season-distinct
+   reference (`Σ transient + peak persistent`) is the upper bracket.
+2. **Conservative drought-floor yield.** Loss = ha × per-AOI 2025 baseline yield
+   (~0.223 t/ha, DEC-019). That is the drought-collapse yield, so the loss is a
+   **lower bound** — 2026 was a tentative recovery (higher expected yields).
+
+**What was built:**
+- **`food_security/impact_layer.py`** — `gate_records` (§6 hard gate), `aggregate_floods`
+  / `aggregate_fires`, `load_baseline`, `compute_impact`, `pressure_label`, and the
+  table/figure/README writers. Runnable: `PYTHONPATH=. python -m food_security.impact_layer`.
+- **`food_security/test_impact_layer.py`** — 12 hermetic Tier-1 tests (gate refusal,
+  peak-vs-sum, union/intersection split, fire severity sum, 2026-study-only sensitivity,
+  loss arithmetic, pressure bands).
+- **Outputs:** `outputs/food_security/impact_by_aoi.csv`, `impact_national.csv`,
+  `IMPACT_README.md`; `outputs/figures/w6_food_security_production_loss.png` (PNG
+  gitignored per DEC-008 — regenerated from code).
+
+**Headline result (validated):** study-area combined cereal-production loss ≈
+**24,400 t** (headline; range **2,650–38,400 t** over cropland-def × temporal
+uncertainty) = **4.5%** of the four AOIs' 2025 baseline (≈544 kt) and **~2.0%** of the
+national ~1.2 Mt floor. Per AOI: Deir ez-Zor **7.55%** / Raqqa **7.61%** (*significant
+incremental stress*), Hasakah **2.74%** (*moderate*), Latakia **0.02%** (*marginal* —
+fire only; its July peak is in the simulated future). Floods dominate the loss; fire
+adds ~840 t (Hasakah).
+
+**For the next sessions (S9 RQ1 / S10 RQ2 / S11 RQ3 — all independent, validated-only):**
+- These do **not** consume this layer's loss numbers; they consume the same **validated**
+  `DamageRecord`s plus their own external data (CHIRPS/GloFAS for S9, ACLED for S10,
+  `control_areas.geojson` for S11). Use `schema.read_csv` + filter `is_consumable()`
+  (or `viz.consumable_records`) — the same gate this layer enforces.
+- **S9/RQ1** can reuse the flood **event dates** (the per-AOI peak dates: Deir ez-Zor
+  Jun 3, Raqqa Jun 7, Hasakah Jun 7 dominate) as the flood-timing signal against GloFAS
+  discharge / CHIRPS rainfall. Mind the proportionate-claims / dam-attribution rule (§9).
+- **S10/RQ2:** live ACLED still has **no 2026 Syria data** (S5 note) — check ACLED's max
+  date before relying on the 2026 fire-window pull; flag as a data-availability gap if absent.
+- **Indicative pressure is NOT IPC** (DEC-033). Any report/figure that cites food-security
+  phase must carry that caveat and attribute GIEWS/FEWS NET/IPC.
+
+**Gotchas carried forward (still true):** `PYTHONPATH=.` for `food_security`/`schema`
+imports; filter the benign `gdk-pixbuf`/librsvg warning on every `conda run`; temp
+scripts in gitignored `secrets/`. New: the figure path uses a non-interactive
+matplotlib `Agg` backend and degrades gracefully (returns None) if viz/matplotlib is
+absent — the CSV outputs never depend on a plotting backend.
 
 ---
 
@@ -834,7 +893,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX+GDELT) | Complete | 2026-06-13 | Tier-1; 4 clients on shared cache/config layer; 23 tests pass; FIRMS/ACLED/CHIRPS/HDX live-verified; ReliefWeb→GDELT (DEC-022); DEC-020/021. ⚠ GDELT live re-verify + ACLED 2026-coverage notes |
 | 6 | W4 — Floods → damage | Complete | 2026-06-13 | 63 records (21×3 AOIs); S1 change-det+HAND (DEC-023/024). ✅ **human Tier-2 gate CLOSED** — all 63 `validated`; packet in `outputs/floods/validation_packet/` |
 | 7 | W5 — Fires → damage | Complete | 2026-06-13 | **Tier-2 gate CLOSED by human** (all 8 records `validated` vs EMSR811). Hasakah 2026 = 3,758 ha burned cropland (union); Latakia 2026 ≈ 1 ha (July future). DEC-030/031/032. Isolated worktree (parallel w/ S6) |
-| 8 | W6 — Food-security impact layer | Not started | | Validated-only |
+| 8 | W6 — Food-security impact layer | Complete | 2026-06-13 | Tier-1; validated-only join, 12 tests pass; DEC-033 (union-headline normalisation + flood peak-date no-double-count + conservative drought-floor yield). Study loss ≈24.4 kt (~2.0% of national floor) |
 | 9 | W7 — RQ1 flood attribution | Not started | | Reasoning-heavy |
 | 10 | W8 — RQ2 fire attribution | Not started | | Reasoning-heavy |
 | 11 | W9 — RQ3 descriptive control overlay | Not started | | Descriptive only |
