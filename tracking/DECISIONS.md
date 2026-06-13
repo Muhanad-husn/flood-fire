@@ -434,4 +434,57 @@ and the downstream impacts; reference the original entry.
 > double-count), for fires it reads the headline directly. **Human decision needed:**
 > pick one convention for S8 to standardise on (the fires single-headline approach
 > avoids the double-count footgun), or have S8 normalise both on read. Flagged, not
-> silently resolved (Working Rules / CLAUDE.md).
+> silently resolved (Working Rules / CLAUDE.md). **→ RESOLVED in [[DEC-033]] (S8):
+> union-headline + intersection-low, normalised on read.**
+
+- **DEC-033** (S8/W6) — **Food-security impact layer: validated-only join +
+  union-headline normalisation + flood temporal double-count avoidance + conservative
+  drought-floor yield.** `food_security/impact_layer.py`. The §3.4 chain
+  (`damaged_cropland_ha` → production loss → indicative food-security pressure vs the
+  §3.3 baseline), implemented over **human-validated records only** (§6).
+  - *Validation gate (§6, [[DEC-007]]):* `gate_records(strict=True)` refuses (raises)
+    on any record whose `validation_status != validated` rather than silently dropping
+    it — a half-validated pipeline cannot be quietly consumed. Reads the shared schema
+    (§3.2) only, never pipeline rasters. Unit-tested (refusal + arithmetic), 12 Tier-1
+    tests in `food_security/test_impact_layer.py`.
+  - *Cross-pipeline normalisation (resolves the drift note above; the user chose the
+    fires convention 2026-06-13):* **UNION cropland = headline, INTERSECTION = low
+    bound.** The flood two-row encoding ([[DEC-024]]) and the fire union-headline +
+    sensitivity-table encoding ([[DEC-032]]) are normalised onto one union-headline on
+    read — floods select the `…+cropland_union` rows (intersection rows kept as the low
+    bound), fires read the `S2_dNBR` headline (intersection from
+    `fire_damage_sensitivity.csv`, **2026 study rows only** — the 2025 EMSR811 anchor is
+    excluded per [[DEC-001]]). No flood double-count across cropland definitions.
+  - *Flood temporal double-count avoidance:* flood records are **per event-date** and a
+    `persistent` pixel ([[DEC-024]]) recurs on every date it floods, so summing hectares
+    across dates would double-count it. **Headline flood-affected cropland per AOI = the
+    PEAK single event-date extent** (transient+persistent on the worst date) — a clean
+    snapshot and conservative lower bound, matching the S6 handoff headlines. A
+    season-distinct upper reference (`Σ transient over dates + peak persistent`; transient
+    pixels are globally disjoint so summing them is exact) brackets the temporal
+    uncertainty. Fires = one window, disjoint severity → exact sum, no temporal issue.
+  - *Production loss = ha × per-AOI 2025 baseline yield* (`cereal_production_2025_t /
+    cropland_ha`, [[DEC-019]] — a uniform ~0.223 t/ha). That is the **drought-floor**
+    yield (the ~1.2 Mt 2025 collapse), so applying it to 2026 damaged area is a
+    **deliberately conservative lower bound**: 2026 was a tentative recovery (PRODUCT §2),
+    so expected yields on the lost hectares were higher. The reported range
+    (`_low`/`_headline`/`_season_ref`) brackets cropland-definition × temporal-aggregation
+    uncertainty only — it does **not** add yield-recovery uncertainty.
+  - *Food-security "phase delta" is INDICATIVE, not IPC (proportionate claims, §9):* we
+    do **not** assign IPC phase numbers — a real phase needs the full IPC protocol
+    (consumption/livelihoods/nutrition/mortality), not cropland loss alone.
+    `pressure_label()` maps loss-as-%-of-baseline to a qualitative band
+    (marginal / moderate / significant / severe incremental stress), explicitly framed as
+    a production-shock **signal feeding** a GIEWS / FEWS NET / IPC assessment, on top of
+    the already record-drought 2025 baseline. GIEWS/FEWS NET/IPC named as the
+    authoritative phase sources.
+  - *Headline result (validated):* study-area combined cereal-production loss ≈
+    **24,400 t** (headline; range **2,650–38,400 t**) = **4.5%** of the four AOIs' 2025
+    baseline (≈544 kt) and **~2.0%** of the national ~1.2 Mt floor. Per AOI: Deir ez-Zor
+    7.55%, Raqqa 7.61% (*significant*), Hasakah 2.74% (*moderate*), Latakia 0.02%
+    (*marginal* — its July fire peak is in the simulated future, S7). Outputs:
+    `outputs/food_security/impact_by_aoi.csv`, `impact_national.csv`, `IMPACT_README.md`,
+    and `outputs/figures/w6_food_security_production_loss.png`.
+  - *Downstream:* S12 verification audits the gate (no agent-validated record consumed);
+    the RQ sessions (S9–S11) consume the same validated records but their own analyses,
+    not this layer's loss numbers.

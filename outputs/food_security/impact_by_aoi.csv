@@ -1,0 +1,6 @@
+aoi_id,phenomenon,damaged_ha_headline_union,damaged_ha_low_intersection,damaged_ha_season_ref_union,baseline_yield_t_ha,baseline_production_2025_t,production_loss_t_headline,production_loss_t_low,production_loss_t_season_ref,loss_pct_of_baseline_headline
+deir_ez_zor,flood,22165.92,1294.92,34490.88,0.2234,65577.0,4952.4,289.3,7706.1,7.552
+hasakah,flood,38672.91,6733.35,75755.97,0.2234,345841.0,8640.5,1504.4,16925.7,2.498
+raqqa,flood,44665.02,892.44,58009.32,0.2234,131184.0,9979.2,199.4,12960.6,7.607
+hasakah,fire,3757.68,2942.94,3757.68,0.2234,345841.0,839.6,657.5,839.6,0.243
+latakia,fire,1.11,0.03,1.11,0.2235,1356.0,0.2,0.0,0.2,0.018
