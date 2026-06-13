@@ -33,22 +33,42 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT_TABLES = ROOT / "outputs" / "tables"
 OUT_HOTSPOTS = ROOT / "outputs" / "fire_hotspots"
 
-# (aoi, window-label, date-string, firms-sources, (pre), (post), is_study)
-JOBS = [
-    ("hasakah", "2026", "2026-05-01/2026-06-12", af.VIIRS_NRT,
-     ("2026-03-15", "2026-04-30"), ("2026-05-25", "2026-06-12"), True),
-    ("latakia", "2026", "2026-05-01/2026-06-12", af.VIIRS_NRT,
-     ("2026-03-15", "2026-04-30"), ("2026-05-25", "2026-06-12"), True),
-    # Validation anchor — EMSR811 (Jul 2025 Latakia). NOT a 2026 study record.
-    ("latakia", "2025_emsr811", "2025-07-01/2025-07-20", af.VIIRS_SP,
-     ("2025-06-01", "2025-06-30"), ("2025-07-21", "2025-08-25"), False),
-]
+# 2026 fire-season windows (S13 national re-scope). Same calendar windows for
+# every governorate; dNBR is computed only over each governorate's VIIRS footprint.
+WINDOW_2026 = "2026-05-01/2026-06-12"   # available VIIRS NRT slice of May–Jul season
+PRE_2026 = ("2026-03-15", "2026-04-30")
+POST_2026 = ("2026-05-25", "2026-06-12")
+
+
+def _gov_features() -> list[dict]:
+    g = json.loads((ROOT / "aois" / "governorates.geojson").read_text())
+    return g["features"]
+
+
+def _fire_aois() -> list[str]:
+    """Canonical fire AOIs = governorates tagged `fires` in governorates.geojson.
+
+    National since S13 (every governorate with 2026 cropland fire); Latakia and
+    Damascus City carry no `fires` tag (0 cropland fire) and are excluded.
+    """
+    return [f["properties"]["aoi_id"] for f in _gov_features()
+            if "fires" in f["properties"].get("pipelines", [])]
+
+
+def _jobs() -> list[tuple]:
+    """(aoi, label, date_str, firms-sources, pre, post, is_study) per fire AOI."""
+    jobs = [(aoi, "2026", WINDOW_2026, af.VIIRS_NRT, PRE_2026, POST_2026, True)
+            for aoi in _fire_aois()]
+    # Validation anchor — EMSR811 (Jul 2025 Latakia forest fire). NOT a 2026 study
+    # record (pre-2026 = baseline/context, DEC-001); kept to validate the method.
+    jobs.append(("latakia", "2025_emsr811", "2025-07-01/2025-07-20", af.VIIRS_SP,
+                 ("2025-06-01", "2025-06-30"), ("2025-07-21", "2025-08-25"), False))
+    return jobs
 
 
 def _aoi_geoms():
     import ee
-    g = json.loads((ROOT / "aois" / "governorates.geojson").read_text())
-    return {f["properties"]["aoi_id"]: ee.Geometry(f["geometry"]) for f in g["features"]}
+    return {f["properties"]["aoi_id"]: ee.Geometry(f["geometry"]) for f in _gov_features()}
 
 
 def run() -> None:
@@ -60,7 +80,7 @@ def run() -> None:
     sensitivity_rows: list[dict] = []
     anchor_rows: list[dict] = []
 
-    for aoi, label, date_str, sources, pre, post, is_study in JOBS:
+    for aoi, label, date_str, sources, pre, post, is_study in _jobs():
         print(f"\n=== {aoi} [{label}] {date_str} ===")
         start, end = date_str.split("/")
         rows = af.fetch(aoi, start, end, sources=sources)

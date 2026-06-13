@@ -582,3 +582,58 @@ and the downstream impacts; reference the original entry.
     `outputs/fires/rq2_attribution/` (`RQ2_FINDING.md`, `proximity_summary.csv`,
     `daily_counts_*_2025.csv`, `conflict_types_near_fire_*_2025.csv`) and
     `outputs/figures/w8_rq2_fire_conflict.png` (gitignored, [[DEC-008]]).
+
+- **DEC-037** (S13) — **Fire pipeline re-scoped from 2 AOIs to NATIONAL (all 14
+  governorates); Latakia dropped; fire framed as its own (drought/heat) hazard, not
+  conflict.** Revises the fire-AOI scope of [[DEC-014]] (4 AOIs) and [[DEC-015]]
+  (4-AOI cropland mask) and the §3.1/§4 fire-AOI contract. Authorised by the user
+  (2026-06-14) after the fire sourcing was challenged and checked.
+  - *Why the original scope was wrong:* §4 named **Hasakah + Latakia** for fires, and
+    Latakia was anchored on the **2025** Copernicus EMS **EMSR811 _forest_ fire** — wrong
+    year *and* wrong land cover for a 2026 **cropland**-damage study. A national 2026 VIIRS
+    scan (2026-06-14, on-cropland flagged via WorldCover cls40) showed **Latakia = 9
+    hotspots, 0 on cropland**, while 2026 cropland fire is national and Hasakah-dominant.
+    The 2025-anchored AOI choice (made before any 2026 fire evidence existed) is superseded
+    by the 2026 evidence — the contract served a 2025 forest event, not the 2026 crop-fire
+    reality (CLAUDE.md core principle: fix the obviously-wrong result, don't honour a stale
+    contract).
+  - *What changed (scope only — method is unchanged):* canonical AOIs extended 4→**14 GAUL
+    governorates** (`aois/build_aois.py`, `governorates.geojson`; first 4 `aoi_id`s
+    byte-stable so all flood/baseline refs hold; Homs `GeometryCollection` normalised to
+    MultiPolygon). Floods stay on {Deir ez-Zor, Raqqa, Hasakah}. **Fires now run on every
+    governorate with 2026 cropland fire** — the `build_fires._fire_aois()` derives them from
+    the `pipelines:["fires"]` tag (Latakia & Damascus City carry no tag → 0 cropland fire).
+    The S7 method is **identical** (S2 dNBR ∩ VIIRS near-fire 375 m [[DEC-031]] ∩ DEC-015
+    cropland, severity bins [[DEC-009]], union headline + intersection sensitivity
+    [[DEC-032]]); only the AOI loop widened. Hectares are server-side over each
+    governorate's VIIRS footprint (no national raster needed for the numbers). The national
+    cropland mask (all 14, [[DEC-015]] categorical) is rebuilt for the review/repro surface
+    (geedim, Restricted-Mode `max_requests=2`).
+  - *National 2026 result (UNVALIDATED — pending the Tier-2 human gate):* **48 study
+    DamageRecords across 12 governorates, ~10,533 ha burned cropland (union headline;
+    ~6,600 ha intersection).** Per AOI (union): **Hasakah 4,124** (dominant), Raqqa 1,225,
+    Aleppo 991, Idlib 901, Homs 740, Daraa 722, Rural Damascus 524, Hama 447, Quneitra 340,
+    Tartus 230, Deir ez-Zor 198, Suwayda 93. This **corroborates the user's 2026 reporting**
+    (Idlib wheat/barley, Daraa, Aleppo, nationwide field fires) and ~**2.8× the old
+    Hasakah-only 3,758 ha** — the re-scope materially changes the fire footprint (and the S8
+    food-security impact, which must re-run). Latakia EMSR811 stays a method-validation
+    anchor only (17 ha *cropland*, 2025 forest — [[DEC-001]]), not a study record.
+  - *Fire framed as its own hazard (not conflict):* per the user's expert assessment there
+    was **no active armed conflict** in the 2026 window (see the RQ2 memory), so the fires
+    are a **drought-and-heat agricultural hazard** (dry vegetation at harvest), not a
+    conflict story. RQ2 resolves to agricultural/accidental ([[DEC-036]]); the 2025
+    conflict-overlay machinery stays as a baseline-year demonstration.
+  - *Method signal worth the human's eye (proportionate, §9):* the union:intersection gap
+    and per-hotspot yield vary by governorate — e.g. **Deir ez-Zor (945 hotspots → 198 ha
+    union / 9.5 ha intersection)** shows most DeZ fire is **off cropland** (oil/desert),
+    which the cropland ∩ near-fire gates correctly discriminate; Raqqa/Idlib (few hotspots,
+    large cropland scars) are the opposite. The human validates extent against any 2026 EMS
+    fire activations / imagery.
+  - *Tier-2 (§6, [[DEC-007]]):* all 48 records are `unvalidated`; this **supersedes the old
+    8-record (Hasakah+Latakia) validated `fire_damage.csv`** — those validations do not carry
+    over, the national set needs a fresh human gate. Outputs:
+    `outputs/tables/fire_damage.{csv,parquet}` (48 union-headline records),
+    `fire_damage_sensitivity.csv` (union/intersection per gov), `fire_validation_anchor_emsr811.csv`.
+  - *Downstream:* S8 (food-security) re-runs on the national fire records; the
+    `production_baseline.csv` already covers all 14 governorates ([[DEC-019]]) so the join
+    extends cleanly. S12 audits the re-scope + the superseded-validation note.

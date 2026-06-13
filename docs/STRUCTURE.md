@@ -45,7 +45,9 @@ syria-agri-shocks-2026/
 ## 3. Core contracts (pinned — do not reopen in continued planning)
 
 ### 3.1 AOI & cropland mask
-Canonical AOIs: Deir ez-Zor, Raqqa, Hasakah (floods); Hasakah, Latakia (fires). One cropland mask, reconciled from Dynamic World and ESA WorldCover, with disagreement documented. Every module consumes these canonical assets; no module redefines AOIs.
+Canonical AOIs: **all 14 GAUL governorates of Syria** (national). Floods run on Deir ez-Zor, Raqqa, Hasakah; **fires run nationally** on every governorate with 2026 cropland fire (all except Latakia and Damascus City). One cropland mask, reconciled from Dynamic World and ESA WorldCover, with disagreement documented. Every module consumes these canonical assets; no module redefines AOIs.
+
+> **Revised at S13 (2026-06-14, DEC-037), reopening the original fire-AOI scope.** The original §3.1/§4 named only Hasakah + Latakia for fires, and DEC-014 built only 4 AOIs. That fire-AOI choice was anchored on the **2025** Copernicus EMS **EMSR811 forest** fire in Latakia — wrong year and wrong land cover for a 2026 *cropland* study. A national 2026 VIIRS scan (2026-06-14) showed Latakia had **9 hotspots, 0 on cropland**, while 2026 cropland fire is national and Hasakah-dominant. The AOI set is therefore extended to all 14 governorates and fires re-scoped national; floods are unchanged. See DEC-037; downstream re-runs: fire records (W5), food-security (W6/S8).
 
 ### 3.2 Shared damage schema (the integration contract)
 Every damage record, from either pipeline, conforms to one schema keyed on:
@@ -67,10 +69,10 @@ Reference layers, computed once, not per run: NDVI anomaly on cropland (drought 
 - **Outputs:** flood masks → `damaged_cropland_ha`; flow-vs-rainfall series for RQ1.
 
 ### Pipeline B — Crop fires
-- **Window:** May–July 2026 fire season; July 2025 Latakia (EMSR811) as documented anchor.
-- **AOIs:** Hasakah (cropland fires), Latakia (coastal/forest).
+- **Window:** May–July 2026 fire season (available VIIRS NRT slice: May 1 – Jun 12 2026; July peak is in the simulated future). July 2025 Latakia (EMSR811) kept only as a **method-validation anchor** (2025 = baseline/context, DEC-001) — *not* a study AOI (re-scoped at S13, DEC-037).
+- **AOIs:** **national** — every governorate with 2026 cropland fire (Hasakah dominant; + Homs, Deir ez-Zor, Aleppo, Rural Damascus, Quneitra, Raqqa, Hama, Idlib, Daraa, Tartus, Suwayda). Latakia excluded (0 cropland fire in 2026).
 - **Core data:** FIRMS VIIRS (375 m, **not** MODIS 1 km), Sentinel-2 dNBR (scar + severity), MODIS MCD64A1 (burned area), Dynamic World (cropland baseline).
-- **Outputs:** burned-cropland hectares + severity → `damaged_cropland_ha`; ACLED-overlaid hotspots for RQ2.
+- **Outputs:** burned-cropland hectares + severity → `damaged_cropland_ha`. **Fire framed as its own hazard** (drought-dried vegetation + heat at harvest), not a conflict story: per the user's expert assessment there was no active armed conflict in the 2026 window, so RQ2 resolves to **agricultural/accidental** (DEC-037; the 2025 conflict-overlay machinery, DEC-036, stays as a baseline-year demonstration).
 
 ## 5. Data source contracts (operative subset)
 
