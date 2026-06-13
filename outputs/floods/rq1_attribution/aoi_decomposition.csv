@@ -1,0 +1,4 @@
+aoi_id,reach_type,riverine_peak_ha,pluvial_peak_ha,unexplained_peak_ha,dominant_mechanism,unexplained_flag
+deir_ez_zor,transboundary,22165.92,0.0,0.0,riverine,False
+raqqa,transboundary,44665.02,0.0,0.0,riverine,False
+hasakah,rainfed_tributary,32456.07,0.0,38672.91,unexplained,True
