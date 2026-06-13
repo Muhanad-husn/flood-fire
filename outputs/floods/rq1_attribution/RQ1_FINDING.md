@@ -85,6 +85,32 @@ signature. **This is stated as consistency, not proof.**
   This matches the DEC-023 SAR failure mode (dry/harvested June fields mimic open
   water). RQ1 does **not** attribute these hectares; recommend S6/S12 re-examine the
   June Hasakah dates. (RQ1 only reads validated records; it does not alter them.)
+- **Documentary corroboration (added 2026-06-13, post-S9; web-verified where noted —
+  strengthens the flag, alters no record).** Independent reporting converges with the
+  mechanistic split:
+  - *March Hasakah flood = confirmed real.* Syrian Civil Defense responded to the Khabur
+    overflowing into Hasakah neighbourhoods (Mirdian, Nashwa, Ghwairan) with evacuations and
+    homes damaged, incl. ~300 families in Tal Hamis/Yarubiyah (SANA; levant24, Mar 2026,
+    verified). IFRC emergency #7847 "Al-Khabur River Floods, Al-Hasakah" (mid-March 2026) and
+    OCHA Flash Update No.1 (27 Mar 2026, reported ~1,436 families displaced) are cited by the
+    user but were **not machine-readable in this check** (IFRC GO is JS-rendered; ReliefWeb
+    returned HTTP 403) — confirm at re-exam.
+  - *Extent cross-check (corrects an earlier draft of this note).* FEWS NET (Mar 2026,
+    verified) reports "~**1,500 ha** of cropland inundated" **across Al-Hasakah, Ar-Raqqa and
+    Deir ez-Zor combined** — not Hasakah alone (alongside ~6,000 displaced, ≥5 deaths, ~2,400
+    houses). That 3-governorate March total is ~an **order of magnitude below our union**
+    March extents (~48.7k ha summed across the three) and in the same low-thousands range as
+    our **intersection** sum (~3.2k ha) — strong external support for DEC-015 "truth at/below
+    the intersection end," and a concrete reason the union headline overstates.
+  - *June Hasakah flood = not independently documented.* No source found describing a separate
+    June 2026 Hasakah/Khabur flood; the documented June flooding is Euphrates (Raqqa, Deir
+    ez-Zor — ReliefWeb FL-2026-000080-SYR), exactly where RQ1's clean riverine records sit.
+    June is also the NE-Syria cereal-harvest window — the precise DEC-023 artifact mechanism
+    (smooth dry/harvested fields ≈ open water in SAR). Scale clash: the *entire* 3-governorate
+    March flood was ~1,500 ha (FEWS NET), yet June Hasakah **alone** claims ~25–39k ha union
+    with no water source.
+  - Net: the June Hasakah hectares are triply unsupported (no water source · no reported event
+    · harvest-timing match) and dwarf the only reported regional flood extent.
 
 ## Caveats
 
