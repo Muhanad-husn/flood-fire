@@ -463,14 +463,75 @@ Pinned facts: Sentinel-1 SAR is **load-bearing** (flood extent through cloud); o
 
 ### Completion criteria
 
-- [ ] Flood masks generated per AOI/date with SAR as primary, permanent water subtracted.
-- [ ] `damaged_cropland_ha` records emitted, schema-conformant, all `unvalidated` by default (Tier-1: schema conformance is agent-verifiable).
-- [ ] Validation packet (masks vs GloFAS / EMS activation) assembled.
-- [ ] **HUMAN GATE (Tier-2):** a human has compared masks against GloFAS + any EMSR flood activation and set `validation_status` accordingly. _Agents/Workflows may not tick this._
+- [x] Flood masks generated per AOI/date with SAR as primary, permanent water subtracted.
+- [x] `damaged_cropland_ha` records emitted, schema-conformant, all `unvalidated` by default (Tier-1: schema conformance is agent-verifiable).
+- [x] Validation packet (masks vs GloFAS / EMS activation) assembled.
+- [ ] **HUMAN GATE (Tier-2):** a human has compared masks against GloFAS + any EMSR flood activation and set `validation_status` accordingly. _Agents/Workflows may not tick this._ **← OPEN: the one remaining S6 criterion. Tier-1 work is complete; this awaits the human.**
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: Tier-1 COMPLETE (2026-06-13); Tier-2 human-validation gate OPEN.** The
+SAR flood pipeline runs end-to-end and emits 63 schema-conformant `DamageRecord`s
+(21 per AOI × 3 AOIs), **all `unvalidated`**. The session is **not fully done** —
+the food-security layer (S8) and RQ1 (S9) will refuse to consume these until a
+**human** compares the masks against GloFAS + any Copernicus EMS flood activation
+and flips `validation_status` (§6, DEC-007). Nothing here may self-certify that.
+
+**What was built:**
+- **`pipelines/floods/flood_mask.py`** (DEC-023) — server-side S1 change-detection
+  flood builders. Per S1 date: reference = in-season per-relative-orbit **median**
+  (Mar–Jun 2026); flood = VV drop ≥ 4 dB **AND** VV < −18 dB **AND** VH < −24 dB
+  (dual-pol open water) **AND** MERIT-Hydro **HAND < 15 m** (floodplain) **AND** not
+  JRC GSW permanent **AND** GLO-30 slope < 5°. 50 m focal-mean pre-filter.
+- **`pipelines/floods/cropland_flooded.py`** (DEC-024) — orchestration: screen every
+  S1 date (coarse 150 m, cached per AOI) → auto-select ≤5 event dates exceeding a
+  dry baseline → export the 30 m flood binary per event (geedim, `max_requests=2`
+  for Restricted Mode) → local connected-component cleanup, stack to a per-pixel
+  flood **frequency**, intersect the **canonical** `aois/cropland_mask.tif`
+  (union {1,2,3} and intersection {3}) → emit records → render the validation packet.
+- **Outputs:** `outputs/floods/flood_damage.csv` (+ `.parquet`, lossless round-trip
+  verified); `outputs/floods/validation_packet/` = 3 per-AOI flood-frequency PNGs,
+  `hectare_summary.csv`, `screening_series.csv` (every S1 date + `is_event`), and a
+  README pointing at the GloFAS / EMS ground truth and the method caveats.
+
+**The signal (UNVALIDATED — for the human to confirm, not a finding yet):**
+- Auto-selected event dates cohere with the documented events and propagate
+  **upstream→downstream**: Raqqa flags May 31 + Jun 6/7/8; Deir ez-Zor Jun 2/3/6/7;
+  Hasakah (Khabur) Jun 2/3/7 + two March dates. The late-May Euphrates surge
+  (PRODUCT §2) is the dominant June cluster.
+- Per-AOI/date **persistent** flooded cropland — **intersection** (high-confidence)
+  vs **union** (liberal): Deir ez-Zor 907 / 17,320 ha; Raqqa 514 / 30,177 ha;
+  Hasakah 1,761 / 19,658 ha. The ~17–50× union:intersection gap is the expected
+  DEC-015 DW/WC disagreement spread (worst in Deir ez-Zor, 72 %). Treat the truth
+  as bracketed by the two; the human validates extent against GloFAS/EMS.
+
+**Method history (why the first attempt was wrong — see DEC-023):** a dry-summer
+reference + single-band lenient threshold flagged ~10⁵ ha of false "flood"
+(spring crop phenology + smooth dry **harvested** June fields mimic water in SAR).
+The in-season median + dual-pol AND + HAND floodplain gate fixed it; the screening
+series in the packet is the evidence the peaks are now event-specific, not noise.
+
+**Caveats carried (proportionate claims, §9):** change-detection on a backscatter
+*drop* captures **open standing water**; flooded vegetation (VV double-bounce) and
+**pluvial upland** flooding (HAND-excluded) are under-detected. Hectares are
+open-water riverine flood extent. Optical/Dynamic World is the confirmatory layer.
+
+**For the human (to close the gate):** review `outputs/floods/validation_packet/`
+— confirm (a) `screening_series.csv` peaks match the known April-hail / late-May
+surge timing, (b) the PNG flood pattern sits in the Euphrates/Khabur floodplain,
+(c) extent vs GloFAS discharge timing + any EMSR activation. Then set
+`validation_status` to `validated`/`rejected` per record in `flood_damage.csv`
+(the food-security/RQ sessions consume only `validated`).
+
+**For S7 (fires) — reusable from here:** the geedim `max_requests=2` Restricted-Mode
+export pattern, the screen-cache + tile-cache checkpointing (`_flood_tiles/`), and
+the local connected-component cleanup + canonical-mask-reproject accounting all
+transfer directly to the burn-severity raster path. **GEE is in Restricted Mode**
+(noncommercial compute-quota throttle) — keep concurrency at 2 and lean on caches.
+
+**For S9 (RQ1):** the flood event dates + the cached screening series are the
+flood-timing signal to set against GloFAS discharge / CHIRPS rainfall for the
+rainfall-vs-release decomposition.
 
 ---
 
@@ -692,7 +753,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 3 | W1 — AOIs + reconciled cropland mask | Complete | 2026-06-12 | Assets built/verified; DEC-014/015/016. ✅ human mask-review gate PASSED (Tier-2); DW threshold confirmed |
 | 4 | W2 — 2025 baseline layers | Complete | 2026-06-12 | Tier-1; 3 layers built+cross-checked; DEC-017/018/019. NDVI px = exact S3 union total |
 | 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX+GDELT) | Complete | 2026-06-13 | Tier-1; 4 clients on shared cache/config layer; 23 tests pass; FIRMS/ACLED/CHIRPS/HDX live-verified; ReliefWeb→GDELT (DEC-022); DEC-020/021. ⚠ GDELT live re-verify + ACLED 2026-coverage notes |
-| 6 | W4 — Floods → damage | Not started | | **Tier-2 human gate** |
+| 6 | W4 — Floods → damage | Tier-1 done; **human gate open** | 2026-06-13 | 63 records (21×3 AOIs), all `unvalidated`; S1 change-det+HAND (DEC-023/024); packet in `outputs/floods/validation_packet/`. Awaiting human validation vs GloFAS/EMS |
 | 7 | W5 — Fires → damage | Not started | | **Tier-2 human gate** |
 | 8 | W6 — Food-security impact layer | Not started | | Validated-only |
 | 9 | W7 — RQ1 flood attribution | Not started | | Reasoning-heavy |
