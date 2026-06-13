@@ -1,0 +1,5 @@
+aoi_id,window,n_fires,n_armed_conflict,conflict_available,fire_median_km_to_armed,frac_within_1km,frac_within_5km,frac_within_10km,cropland_null_median_km,closer_than_cropland_baseline,coincidence_frac_armed_5km_7d,spearman_fire_vs_conflict,spearman_fire_vs_armed
+hasakah,2025-05-01..2025-06-13,1592,50,True,14.8455288586349,0.0,0.07160804020100503,0.1457286432160804,15.7526237149232,False,0.01821608040201005,0.24136898998961556,0.3608228943200595
+latakia,2025-05-01..2025-06-13,127,34,True,4.857982549001713,0.0,0.5511811023622047,0.8976377952755905,3.593187600910892,False,0.047244094488188976,0.00921608947530036,0.07666893631395517
+hasakah,2026-05-01..2026-06-12,2077,0,False,,,,,,,,,
+latakia,2026-05-01..2026-06-12,9,0,False,,,,,,,,,

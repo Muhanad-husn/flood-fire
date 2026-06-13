@@ -539,3 +539,46 @@ and the downstream impacts; reference the original entry.
     validated records unaltered. Outputs: `outputs/floods/rq1_attribution/`
     (`RQ1_FINDING.md`, `event_mechanism.csv`, `aoi_decomposition.csv`, CHIRPS + GloFAS
     series) and `outputs/figures/w7_rq1_rainfall_vs_discharge.png`.
+
+- **DEC-036** (S10/W8) — **RQ2 fire attribution: cropland-restricted spatial null +
+  space-time + temporal lenses; built fully, demonstrated on the latest ACLED window
+  (2025), with the 2026 study overlay deferred on a data-availability gap.**
+  `pipelines/fires/attribution.py` (18 Tier-1 tests). RQ2 is reasoning, not a
+  `damaged_cropland_ha` output → no Tier-2 gate; consumes the validated S7 detections
+  read-only (§6) and emits no schema records.
+  - *The constraint that shaped the session (probed 2026-06-13):* **live ACLED Syria
+    coverage ends 2025-06-13** — exactly one year behind the simulated "today". The
+    **2026 study fire window has ZERO ACLED events**, so the conflict overlay for the
+    validated 2026 fires **cannot be computed** — a data-availability gap, surfaced and
+    flagged, **not** a "no linkage" finding ([[DEC-021]] foresaw this; the S5/S7/S9
+    handoffs all warned it). Per the session decision ("build + demo on latest window"),
+    the method is built and **demonstrated on May 1 – Jun 13 2025** (the analogous,
+    fully-covered fire season) over the same fire AOIs, using VIIRS `*_SP` archive
+    hotspots. The 2025 run is a **method demonstration on baseline/context ([[DEC-001]]),
+    not a study finding**; re-running over `STUDY_WINDOW` produces the real 2026 result
+    with no code change once ACLED ingests 2026 Syria data.
+  - *The load-bearing analytical choice — a cropland-restricted spatial null.* A raw
+    "% of fires within 5 km of conflict" is indefensible: fires (on cropland) and
+    conflict (in inhabited belts) co-locate by geography alone. RQ2 compares each fire's
+    distance-to-nearest-**armed**-conflict (Battles / Explosions-Remote violence /
+    Violence against civilians) against the distance from random *cropland* pixels
+    (DEC-015 union mask, fixed seed) to the same events. Fires "concentrate along
+    frontlines" only if **closer than the cropland baseline** (convention: median ≤ 0.75×
+    null median). Plus a space-time coincidence fraction (≤5 km & ±7 d) and a daily
+    fire-vs-conflict Spearman ρ. Distance maths is pure numpy in PROJ_CRS (UTM 37N);
+    loaders hit the cached FIRMS/ACLED clients.
+  - *Demonstration finding (2025, baseline/context — NOT a study result):* in **both**
+    fire AOIs, crop fires are **no closer** to armed conflict than cropland is in general
+    — Hasakah 14.8 km (fire median) vs 15.8 km (cropland null), Latakia 4.9 vs 3.6 km;
+    coincidence 2% / 5%; ρ=+0.36 / +0.08. Latakia's superficially-alarming "55% within
+    5 km" is exposed by the null as a **small-AOI geography artifact**, not a frontline
+    signal. So the 2025 cropland fires read as **agricultural/seasonal, not
+    conflict-concentrated** — the proportionate, defensible characterisation (§9).
+    Co-location is never asserted as cause; PAX Sentinel-2 is the descriptive precedent.
+  - *Flag surfaced for S12 (CLAUDE.md — not silently resolved):* **RQ2 cannot be
+    completed against real 2026 conflict data until ACLED ingests 2026 Syria events**
+    (max `event_date` = 2025-06-13). S12 should log this as a known data-availability
+    gap; the method + 2025 demo stand, the 2026 study overlay is deferred. Outputs:
+    `outputs/fires/rq2_attribution/` (`RQ2_FINDING.md`, `proximity_summary.csv`,
+    `daily_counts_*_2025.csv`, `conflict_types_near_fire_*_2025.csv`) and
+    `outputs/figures/w8_rq2_fire_conflict.png` (gitignored, [[DEC-008]]).
