@@ -33,5 +33,8 @@ dependencies:
   - jupyter         # notebook kernel for the validation workbench + Quarto execute
   # --- large-raster export from GEE without the (deprecated) Drive scope ---
   - geedim          # tiled getPixels download + mosaic (W1 cropland mask; DEC-012 context)
+  # --- GloFAS river discharge via Copernicus Early Warning Data Store (RQ1/S9) ---
+  - cdsapi          # EWDS/CDS API client for cems-glofas-historical reanalysis
+  - netcdf4         # NetCDF backend for xarray to read the GloFAS discharge cubes
   # --- testing ---
   - pytest

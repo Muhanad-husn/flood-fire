@@ -763,14 +763,77 @@ RQ1 is politically charged (dam attribution) — **keep causal claims proportion
 
 ### Completion criteria
 
-- [ ] Rainfall (CHIRPS) and discharge (GloFAS) series assembled over the correct window.
-- [ ] A rainfall-vs-discharge decomposition stated with explicit confidence and caveats.
-- [ ] Claims are proportionate and sourced (no overclaim on dam attribution — PRODUCT.md §9).
-- [ ] Method/assumptions recorded in `tracking/DECISIONS.md`.
+- [x] Rainfall (CHIRPS) and discharge (GloFAS) series assembled over the correct window. *(CHIRPS daily Jan–Jun 2026 per AOI via `clients/chirps.py`; GloFAS `cems-glofas-historical` intermediate, 5 Euphrates/Khabur reaches, 2026 + 2025 ref, via new `clients/glofas.py`. Series in `outputs/floods/rq1_attribution/`.)*
+- [x] A rainfall-vs-discharge decomposition stated with explicit confidence and caveats. *(`RQ1_FINDING.md` + `event_mechanism.csv` + `aoi_decomposition.csv` + figure; per-event mechanism by river geography + rainfall/discharge coincidence; HIGH/MED/LOW confidence per claim.)*
+- [x] Claims are proportionate and sourced (no overclaim on dam attribution — PRODUCT.md §9). *(Natural-vs-managed release stated as LOW-confidence "consistent with", no dam-release fraction asserted; spillway report cited as context. DEC-035.)*
+- [x] Method/assumptions recorded in `tracking/DECISIONS.md`. *(DEC-034 GloFAS/CDS access; DEC-035 RQ1 method + Hasakah-June flag.)*
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: COMPLETE (2026-06-13).** Tier-1 (reasoning analysis; no Tier-2 gate — RQ1
+consumes validated S6 records read-only, sets no `validation_status`). The rainfall-vs-
+discharge decomposition is built, GloFAS is wired live end-to-end, and 9 Tier-1 tests
+pass (`pytest pipelines/floods/test_attribution.py`). DEC-034/035 logged.
+
+**What was built / changed:**
+- **`clients/glofas.py`** (new, DEC-034) — cached GloFAS discharge client over the EWDS
+  (`cems-glofas-historical`, **intermediate** product — consolidated lags ~6 mo and
+  doesn't cover June 2026). `area`-subset NetCDF cached under `cache/glofas/` (no re-pull,
+  §9); local main-stem cell extraction (max-mean-discharge within a window) at 5 reaches:
+  Euphrates border/below-Tabqa/Raqqa/Deir-ez-Zor + Khabur@Hasakah.
+- **`pipelines/floods/attribution.py`** (built out from stub, DEC-035) — per-event
+  mechanism classifier: discharge-ratio-vs-2025-baseline + CHIRPS rainfall →
+  riverine/pluvial/mixed/unexplained, keyed by **draining reach** (transboundary Euphrates
+  vs rain-fed Khabur). Writes `RQ1_FINDING.md`, `event_mechanism.csv`,
+  `aoi_decomposition.csv`, CHIRPS/GloFAS series CSVs, and
+  `outputs/figures/w7_rq1_rainfall_vs_discharge.png` (gitignored, DEC-008).
+- **`pipelines/floods/test_attribution.py`** (new) — 9 hermetic Tier-1 tests (mechanism
+  rules, baseline fallback, peak-not-sum decomposition, licence-gap degradation).
+- **`environment.yml`** += `cdsapi`, `netcdf4` (installed into `f_f`).
+- **`secrets/secrets.toml`** — `[CDS/EWDS]` (invalid TOML, `:` seps) reformatted to a
+  valid `[cds]` section so `tomllib` parses the file (it would otherwise break every
+  client). Key unchanged. **(secrets.toml is gitignored — not committed.)**
+
+**The RQ1 finding (defensible, proportionate §9):**
+- **Euphrates AOIs (Deir ez-Zor, Raqqa) = upstream/transboundary — HIGH confidence.** The
+  June inundation (the largest, harvest-season damage: Raqqa 44.7k ha union on Jun 7)
+  coincides with a sustained **~1,600 m³/s dry-season plateau (~6× the 200–250 drought
+  baseline, ~3.3× the 2025 ref)** at **zero local rainfall** → upstream-sourced by
+  construction. The natural snowmelt peak (~3,400 m³/s) was in **late March**.
+- **Hasakah (Khabur) = two stories.** March = a real **rain-fed Khabur pulse** (138/90 m³/s
+  vs ~16 baseline) → regional rainfall. **June = NO water source** (Khabur ~8–12 m³/s,
+  *below* baseline; zero rain) yet 25–39k ha "flood" → **flagged as the DEC-023 SAR
+  harvest artifact**, not attributed.
+- **Natural vs managed upstream release = LOW confidence.** The dry-season sustained/rising
+  June plateau + the modeled (~1,600) vs reported (~2,000) gap are *consistent with* a
+  managed-release contribution (aligns with the reported first-in-30-yr spillway opening,
+  PRODUCT §2) — **no dam-release fraction asserted**.
+
+**⚠ FLAG surfaced for the human (per CLAUDE.md — not silently resolved):** the **Hasakah
+June validated S6 flood records** (3 dates, ~25–39k ha) have no identifiable water source
+and are mechanistically inconsistent with a flood. RQ1 reads them read-only and excludes
+them from attribution; **recommend S6 re-examination and an S12 audit note.** This does
+not invalidate the Euphrates flood records or the S8 food-security numbers (S8's headline
+loss is Euphrates/Deir-ez-Zor/Raqqa-dominated; Hasakah was the smaller contributor), but
+the Hasakah flood hectares should be revisited.
+
+**For the next sessions (S10 RQ2 / S11 RQ3 — independent, validated-only):**
+- **GloFAS/CDS is now wired** — `clients/glofas.py` + `secrets.toml [cds]` + licence
+  accepted. Not needed by S10/S11, but available.
+- **S10/RQ2** (fire–conflict) still faces the S5 note: **live ACLED has no 2026 Syria
+  data** — check ACLED's max date before the 2026 fire-window pull; flag as a data gap if
+  absent. Reuse S7 hotspots + the DEC-031 proximity pattern.
+- **S11/RQ3** consumes validated damage + `aois/control_areas.geojson` — descriptive only
+  (DEC-005). If it includes flood damage, **carry the Hasakah-June flag forward** so the
+  overlay doesn't map artifact hectares as real flooding.
+- **S12** should add the Hasakah-June flag to its audit and confirm the GloFAS cache
+  reproduces from a clean checkout (licence + key required; `cache/glofas/` is gitignored).
+
+**Gotchas carried forward (still true):** `PYTHONPATH=.` for `clients`/`pipelines`
+imports; filter the benign `gdk-pixbuf`/librsvg warning. New: `conda run -m module` needs
+`--cwd /d/flood_fire` **and** `PYTHONPATH=/d/flood_fire` together or it can miss the
+`pipelines` package; CDS retrieves print verbose INFO/maintenance lines to stderr (filter
+them); each CDS job queues server-side ~1–3 min on a cache miss (cached `.nc` thereafter).
 
 ---
 
@@ -894,7 +957,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 6 | W4 — Floods → damage | Complete | 2026-06-13 | 63 records (21×3 AOIs); S1 change-det+HAND (DEC-023/024). ✅ **human Tier-2 gate CLOSED** — all 63 `validated`; packet in `outputs/floods/validation_packet/` |
 | 7 | W5 — Fires → damage | Complete | 2026-06-13 | **Tier-2 gate CLOSED by human** (all 8 records `validated` vs EMSR811). Hasakah 2026 = 3,758 ha burned cropland (union); Latakia 2026 ≈ 1 ha (July future). DEC-030/031/032. Isolated worktree (parallel w/ S6) |
 | 8 | W6 — Food-security impact layer | Complete | 2026-06-13 | Tier-1; validated-only join, 12 tests pass; DEC-033 (union-headline normalisation + flood peak-date no-double-count + conservative drought-floor yield). Study loss ≈24.4 kt (~2.0% of national floor) |
-| 9 | W7 — RQ1 flood attribution | Not started | | Reasoning-heavy |
+| 9 | W7 — RQ1 flood attribution | Complete | 2026-06-13 | Tier-1; CHIRPS vs GloFAS decomposition (new `clients/glofas.py` via EWDS `cems-glofas-historical`); 9 tests pass; DEC-034/035. **Finding:** Euphrates AOIs = upstream/transboundary (June ~1,600 m³/s plateau, 0 rain); natural-vs-managed = LOW conf. **⚠ Hasakah June S6 records flagged: no water source (dry Khabur + 0 rain) → likely DEC-023 SAR harvest artifact — recommend S6/S12 re-exam** |
 | 10 | W8 — RQ2 fire attribution | Not started | | Reasoning-heavy |
 | 11 | W9 — RQ3 descriptive control overlay | Not started | | Descriptive only |
 | 12 | W10 — Verification / reproducibility | Not started | | Audit gate |

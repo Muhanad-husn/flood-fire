@@ -488,3 +488,54 @@ and the downstream impacts; reference the original entry.
   - *Downstream:* S12 verification audits the gate (no agent-validated record consumed);
     the RQ sessions (S9–S11) consume the same validated records but their own analyses,
     not this layer's loss numbers.
+
+- **DEC-034** (S9/W7) — **GloFAS discharge via the Copernicus Early Warning Data
+  Store (`cems-glofas-historical`), `cdsapi` over a `secrets.toml [cds]` url+key.**
+  `clients/glofas.py`. The RQ1 upstream-discharge half (dossier §4.3). Choices:
+  - *Product type = `intermediate`, not `consolidated`.* The consolidated reanalysis
+    lags ~6 months and **does not cover the June-2026 flood window** (a probe returned
+    "invalid combination" for 2026-06 consolidated); the operational `intermediate`
+    product (~2–5 day lag) covers it. Verified live: two 2026 + 2025 cubes retrieved.
+  - *Auth = service-style key in `secrets.toml`* under a valid TOML `[cds]` section
+    (`url`,`key` with `=`). The key arrived structured as `[CDS/EWDS]` with `:`
+    separators — **invalid TOML** that would have broken `tomllib` parsing of the whole
+    secrets file (and the rest of the clients); reformatted to `[cds]`/`=`. Read via the
+    existing `clients._common.secret("cds", …)` (env override `CDSAPI_URL`/`CDSAPI_KEY`).
+  - *Human prerequisite (one-time):* the EWDS account must **accept the
+    `cems-glofas-historical` licence** at the portal manage-licences tab, else the
+    retrieve 403s ("required licences not accepted"). Accepted by the user 2026-06-13.
+  - *Caching (§9):* each `area`-subset cube is cached as `cache/glofas/<sig>.nc`; a
+    re-run/retry reuses the NetCDF and never re-submits the CDS job. Reach time series
+    are extracted **locally** by picking, within a small window of a map point, the cell
+    with the largest mean discharge (= the main channel) — avoids needing the static
+    upstream-area map. `environment.yml` += `cdsapi`, `netcdf4`.
+
+- **DEC-035** (S9/W7) — **RQ1 attribution method: per-event mechanism by river
+  geography + rainfall/discharge coincidence; Hasakah-June flag surfaced, not
+  resolved.** `pipelines/floods/attribution.py` (9 Tier-1 tests). RQ1 is reasoning,
+  not a `damaged_cropland_ha` output → no Tier-2 gate; consumes validated S6 records
+  read-only (§6).
+  - *Mechanism rule per validated event date:* river discharge at the **draining reach**
+    (Euphrates main stem for Deir ez-Zor/Raqqa; the Khabur for Hasakah) as a ratio to the
+    2025 GloFAS drought baseline, plus preceding AOI rainfall (CHIRPS). ratio ≥ 2×
+    baseline → **riverine**; rain ≥ 10 mm/prior-7d → **pluvial**; both → **mixed**;
+    neither → **unexplained** (flagged). Reach type distinguishes transboundary-Euphrates
+    (upstream-sourced) from the rain-fed Khabur (regional rainfall routed through-channel,
+    which AOI-mean CHIRPS under-reads).
+  - *Finding (defensible, proportionate §9):* (1) **Euphrates AOIs = upstream/
+    transboundary, high confidence** — June flooding (the largest damage) coincides with a
+    sustained ~1,600 m³/s dry-season plateau (~6× the 200–250 drought baseline) at **zero
+    local rainfall**; the natural snowmelt peak (~3,400 m³/s) is in late March. (2) **Hasakah
+    March = real rain-fed Khabur pulse** (regional rainfall). (3) **Natural-vs-managed
+    upstream release = LOW confidence** — the dry-season sustained/rising plateau + the
+    modeled (~1,600) vs reported (~2,000) gap are *consistent with* a managed-release
+    contribution (aligning with the reported first-in-30-years spillway-gate opening,
+    PRODUCT §2), but **no dam-release fraction is asserted**.
+  - *Flag surfaced (CLAUDE.md — not silently resolved):* **Hasakah June validated S6
+    records have no water source** — Khabur ~8–12 m³/s (*below* the drought baseline) and
+    zero rainfall cannot produce the ~25–39k ha detected. This matches the [[DEC-023]] SAR
+    failure mode (dry/harvested June fields mimic open water). RQ1 does **not** attribute
+    those hectares and recommends S6/S12 re-examine the June Hasakah dates; RQ1 leaves the
+    validated records unaltered. Outputs: `outputs/floods/rq1_attribution/`
+    (`RQ1_FINDING.md`, `event_mechanism.csv`, `aoi_decomposition.csv`, CHIRPS + GloFAS
+    series) and `outputs/figures/w7_rq1_rainfall_vs_discharge.png`.
