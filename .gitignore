@@ -34,6 +34,9 @@ secrets\rich-stratum-429021-u4-a0736597d906.json
 cache/
 **/cache/
 *.cache
+# GEE tiled-download + screen caches (regenerable reproducibility checkpoints):
+# aois/_mask_tiles, baseline/_ndvi_tiles, pipelines/floods/_flood_tiles, etc.
+**/_*_tiles/
 .checkpoints/
 
 # --- Large rasters / geospatial binaries ---

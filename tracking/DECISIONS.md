@@ -304,3 +304,54 @@ and the downstream impacts; reference the original entry.
     "HDX/ReliefWeb" should read **"HDX / GDELT"**. Left to the human.
   - *Downstream:* S8 (food-security context) uses `search_hdx` + `search_gdelt`;
     no ReliefWeb config remains (`[reliefweb]` removed from README/secrets).
+
+- **DEC-023** (S6/W4) — **Flood extent = Sentinel-1 change-detection vs an
+  in-season per-relative-orbit median, gated to the floodplain (HAND), with a
+  dual-pol open-water signature.** `pipelines/floods/flood_mask.py`. Per S1
+  acquisition date: reference = median of all window (Mar–Jun 2026) acquisitions
+  of the **same relative orbit** (`seasonal_ref`); flood pixel = VV drop ≥ **4 dB**
+  vs that median **AND** in-event **VV < −18 dB AND VH < −24 dB** (open-water,
+  dual-pol AND) **AND** MERIT Hydro **HAND < 15 m** (floodplain) **AND** not JRC
+  GSW permanent water (occurrence > 50 %) **AND** GLO-30 slope < 5°. 50 m focal-mean
+  speckle pre-filter; connected-component cleanup (< 8 px dropped) done locally.
+  - *Why this and not the first attempt:* a **dry-summer (Aug–Oct) reference**
+    flagged dense spring crop canopy as "flood" across whole governorates
+    (~10⁵ ha false positives — phenology, not water); the **in-season median**
+    removes phenology while staying per-orbit (geometry-matched). A single-band
+    VV-or-VH rule with VV < −15 dB still admitted **smooth dry harvested fields**
+    (June, post-harvest bare soil is specular/dark → mimics water); the **HAND
+    floodplain gate** + **dual-pol AND** at stricter thresholds reject those. After
+    the fix, Deir ez-Zor screening isolates a clean late-May/June Euphrates-surge
+    cluster (10–20 k ha) over a ~200–700 ha background — physically coherent and
+    matching PRODUCT §2 ("thousands of hectares … Deir ez-Zor and Raqqa").
+  - *Documented limitation (in the validation packet):* change-detection on a
+    backscatter **drop** captures **open standing water**; flooded vegetation
+    (double-bounce **raises** VV) and **pluvial upland** flooding (HAND-excluded)
+    are under-detected. Treat hectares as open-water riverine flood extent;
+    optical/Dynamic World is the confirmatory layer (§9, DEC-006). Thresholds are
+    the tuning levers — revisit here, not in code.
+  - *Tier-2 (§6, DEC-007):* every emitted record is `unvalidated`; the human gate
+    (vs GloFAS + any Copernicus EMS flood activation) is **not** closed by this run.
+
+- **DEC-024** (S6/W4) — **Event dates auto-selected from the S1 revisit series;
+  union-vs-intersection sensitivity carried in `source_layer`; severity =
+  cross-date persistence.** `pipelines/floods/cropland_flooded.py`.
+  - *Event selection:* every S1 date is screened (coarse 150 m flooded-cropland
+    area, cached per AOI); **event dates** are those exceeding a dry baseline
+    `max(median + 3·MAD, 1.5·median, 500 ha)`, capped at the **5** wettest
+    (cost-conscious — full 30 m export only for events). Screening series is in the
+    validation packet for the human to confirm peaks match the known events.
+  - *Severity (DEC-009):* a flooded cropland pixel is **`persistent`** if flooded
+    on ≥ 2 event dates (cross-date frequency), else **`transient`**; the subtracted
+    JRC GSW river is the 0-ha **`permanent_excluded`** record.
+  - *Union vs intersection (DEC-015):* damage is reported under **both** cropland
+    definitions — `source_layer` = `S1_GRD_changedet+cropland_union` (headline,
+    value ∈ {1,2,3}) vs `…+cropland_intersection` (conservative, value == 3) — a
+    sensitivity range inside the one schema (§3.2), no new field. Deir ez-Zor shows
+    a large union:intersection gap (~17:1), the expected DEC-015 spread there
+    (72 % DW/WC disagreement).
+  - *GEE constraint surfaced:* the noncommercial tier entered **Restricted Mode**
+    mid-session (compute-quota throttle); geedim exports must run at
+    **`max_requests=2`** (not 16) or they trip 429 concurrency errors. Screens and
+    exported tiles are cached (`pipelines/floods/_flood_tiles/`, gitignored) so a
+    throttled rerun resumes without re-spending quota.
