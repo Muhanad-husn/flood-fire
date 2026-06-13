@@ -828,6 +828,23 @@ the Hasakah flood hectares should be revisited.
   overlay doesn't map artifact hectares as real flooding.
 - **S12** should add the Hasakah-June flag to its audit and confirm the GloFAS cache
   reproduces from a clean checkout (licence + key required; `cache/glofas/` is gitignored).
+- **S12 — decisive Hasakah-June cross-check (datasets vetted 2026-06-13).** To confirm/refute
+  the June artifact *without re-running our own SAR* (that would be circular), use an
+  **independent** flood product on the 3 flagged dates (06-02/03/07) over the flagged pixels:
+  (1) **Copernicus GFM** — independent Sentinel-1 ensemble (TU Wien/DLR/LIST) with
+  reference-water + exclusion layers that suppress exactly the dry-soil false positive (openEO
+  `ensemble_flood_extent`); (2) **Copernicus EMS activations** — a web search (2026-06-13)
+  found **no** EMS activation for this flood, so authoritative delineation vectors are likely
+  unavailable (unlike EMSR811 for the fire gate) — re-check, but treat GFM + Sentinel-2 as the
+  primary cross-checks; (3) **Sentinel-2 optical** on the June dates via GEE — cloud-free
+  bare/harvested soil vs standing water settles it directly. Expected: flood present in March,
+  absent in June. Documentary anchors (verified 2026-06-13): FEWS NET reports ~1,500 ha cropland
+  inundated **across all three flood governorates combined** in March (≈ our intersection sum
+  ~3.2k ha, ~30× below our union ~48.7k ha — supports truth-at/below-intersection); IFRC #7847
+  and the OCHA Flash Update (~1,436 families) are user-cited but were not machine-readable in
+  this check (JS-rendered / HTTP 403) — confirm directly. **Already in-repo / redundant for this question:** our own S1 mask
+  (DEC-023), GloFAS (DEC-034), HDX client (W3). **Out of scope (PRODUCT non-goals):** ML/CV
+  flood models, MODIS for detection, operational/Streamlit dashboards.
 
 **Gotchas carried forward (still true):** `PYTHONPATH=.` for `clients`/`pipelines`
 imports; filter the benign `gdk-pixbuf`/librsvg warning. New: `conda run -m module` needs
