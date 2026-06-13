@@ -559,14 +559,92 @@ Pinned facts: **FIRMS VIIRS 375 m for detection, never MODIS** (MODIS MCD64A1 is
 
 ### Completion criteria
 
-- [ ] VIIRS-based detections + S2 dNBR scars generated per AOI/window (MODIS not used for detection).
-- [ ] `damaged_cropland_ha` records emitted, schema-conformant, all `unvalidated` (Tier-1: schema conformance agent-verifiable).
-- [ ] Validation packet (scars vs EMSR811 / PAX precedent) assembled.
-- [ ] **HUMAN GATE (Tier-2):** a human has compared scars against EMSR811 and set `validation_status` accordingly. _Agents/Workflows may not tick this._
+- [x] VIIRS-based detections + S2 dNBR scars generated per AOI/window (MODIS not used for detection).
+- [x] `damaged_cropland_ha` records emitted, schema-conformant, all `unvalidated` (Tier-1: schema conformance agent-verifiable).
+- [x] Validation packet (scars vs EMSR811 / PAX precedent) assembled.
+- [x] **HUMAN GATE (Tier-2):** a human has compared scars against EMSR811 and set `validation_status` accordingly. _Agents/Workflows may not tick this._ **← CLOSED BY HUMAN 2026-06-13: reviewed `outputs/fire_validation/` against EMSR811 + other sources, judged all three AOIs accurate, set all 8 records `validated` in `outputs/tables/fire_damage.csv`.**
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: COMPLETE (2026-06-13).** All four criteria met — the Tier-2 human gate is
+CLOSED: the human reviewed the validation packet against Copernicus EMS EMSR811 and
+other sources, judged all three AOIs accurate, and set **all 8 fire DamageRecords to
+`validated`** (schema-verified, all now `is_consumable()`==True). The validated fire
+records are ready for S8 (food-security). Tier-2 gate closed by a human, not an agent
+(§6/DEC-007).
+
+**Isolation (ran parallel with S6/floods):** S6 was live in `D:\flood_fire` on
+`main`; S7 ran in an **isolated git worktree `D:\flood_fire-s7`** on branch
+`session/syria-agri-shocks-s7`, with the gitignored prerequisites
+(`aois/cropland_mask.tif`, `secrets/`) copied in. Zero contention with S6's tree.
+**Merge note:** both sessions edited `tracking/DECISIONS.md` and this plan; expect a
+trivial end-of-file textual conflict — keep both blocks (see numbering note below).
+
+**What was built / changed (all in `pipelines/fires/` unless noted):**
+- **`active_fire.py`** — VIIRS detection half: cached `fetch()` (via `clients/firms.py`),
+  `to_gdf`/`to_ee_points`, `near_fire_mask` (375 m hotspot footprint, the DEC-031
+  confirmation), `footprint_geometry` (bounds reduceRegion compute), `summary`,
+  `save_hotspots_csv`.
+- **`burn_severity.py`** — S2 dNBR engine: `cropland_masks()` (DEC-015 union/inter,
+  server-side), `_s2_nbr`/`dnbr_image` (cloud-masked NBR=(B8−B12)/(B8+B12),
+  dNBR=pre−post), `severity_class_image` (DEC-009 bins as count-of-thresholds, so it
+  inherits dNBR's projection), `burned_cropland_ha` (severity ∩ near-fire ∩ cropland,
+  pixelArea grouped by class over the footprint), `cropland_area_ha` (cross-check).
+- **`build_fires.py`** — driver. Writes `outputs/tables/fire_damage.{csv,parquet}`
+  (8 union-headline records, all `unvalidated`), `fire_damage_sensitivity.csv`
+  (union vs intersection), `fire_validation_anchor_emsr811.csv`, and
+  `outputs/fire_hotspots/*_viirs.csv`.
+- **`generate_packet.py`** — Tier-2 packet: per-AOI context+zoom PNGs in
+  `outputs/fire_validation/` + `VALIDATION_PACKET.md` (the human gate instructions).
+- **`clients/firms.py`** — **DEC-030 fix:** area-API day-range cap 10→5 (live API now
+  rejects >5). **`clients/test_clients.py`** — updated the chunk test to the 5-day cap.
+  **30 tests pass** (`pytest clients/ schema/`).
+- **`tracking/DECISIONS.md`** — **DEC-030/031/032** (in the reserved fires block).
+
+**Headline results (UNVALIDATED — pending the gate):**
+- **Hasakah 2026 (May 1–Jun 12):** 1925 VIIRS hotspots → **3,757.7 ha** burned cropland
+  (union; 2,942.9 ha intersection). Severity: low 1335 / mod-low 1569 / mod-high 769 /
+  high 84 ha. This is the real 2026 cropland-fire signal.
+- **Latakia 2026:** only **9 hotspots → ~1.1 ha**. The 2026 season has barely begun and
+  its **July peak is in the simulated future** (today 2026-06-13; VIIRS NRT ends 06-12) —
+  a data-availability gap, **not** "no fire risk". Records emitted (mostly 0 ha) and flagged.
+- **EMSR811 anchor (Jul 2025 Latakia):** 915 hotspots; the dNBR recovers a large contiguous
+  high-severity **forest** scar (see `latakia_2025_emsr811_validation.png`) — only ~17 ha is
+  *cropland* (correct: it burned coastal forest). Used to validate the **method**, NOT a
+  study record (2025 = baseline/context, DEC-001).
+
+**Key method decisions (within the pinned contracts):**
+- **DEC-031 — VIIRS-proximity confirmation:** a dNBR scar counts as fire damage only within
+  375 m of a hotspot. Discriminates fire from harvest/plough NBR drops → estimate is a
+  **conservative lower bound**. The human judges if it's too strict.
+- **DEC-032 — union headline + sensitivity side-table:** the schema has one
+  `damaged_cropland_ha` per key, so records carry the **union** (DEC-015 headline) and the
+  union/intersection range lives in `fire_damage_sensitivity.csv`. **S6/floods should adopt
+  the same convention** so S8 reads one consistent headline column across both phenomena.
+- **Cropland equivalence proven:** server-side DEC-015 cropland matches the human-reviewed
+  `cropland_mask.tif` — Hasakah union 1.005 / inter 0.999, Latakia within ~5%.
+
+**DEC numbering (parallel-session collision avoidance):** S7 reserved **DEC-030–032** for
+fires, leaving **DEC-023–029 for S6/floods**. Disjoint ranges → at merge keep both blocks,
+no renumber needed (unless S6 overflowed past DEC-029).
+
+**For the NEXT actions:**
+1. **HUMAN (mandatory, Tier-2):** open `outputs/fire_validation/VALIDATION_PACKET.md`,
+   download Copernicus EMS **EMSR811** and overlay it on the anchor PNG, review the Hasakah/
+   Latakia study panels, then set `validation_status` (`validated`/`rejected`) **per record**
+   in `outputs/tables/fire_damage.csv`. Only then is S7 "Complete". Then `--no-ff` merge the
+   branch (per the commit-on-session-complete habit).
+2. **S8 (food-security)** consumes only `validated` fire records — it cannot run until the gate
+   closes. It should read both `fire_damage.csv` (union headline) and
+   `fire_damage_sensitivity.csv` (range).
+3. **S10/RQ2** reuses these hotspots + the DEC-031 pattern for the ACLED conflict overlay; mind
+   the S5 note that **live ACLED has no 2026 Syria data** yet.
+
+**Gotchas carried forward (still true):** `PYTHONPATH=.` for `clients`/`pipelines` imports;
+filter the benign `gdk-pixbuf`/librsvg warning on every `conda run`; temp scripts in gitignored
+`secrets/`. New: a single `reduceRegion` over a **whole governorate** at 30 m still times out —
+reduce over the **hotspot footprint** (dNBR is lazy, only evaluated in the region) and keep the
+cropland cross-check at coarse scale (100 m) for Hasakah.
 
 ---
 
@@ -755,7 +833,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 4 | W2 — 2025 baseline layers | Complete | 2026-06-12 | Tier-1; 3 layers built+cross-checked; DEC-017/018/019. NDVI px = exact S3 union total |
 | 5 | W3 — API clients (FIRMS/CHIRPS/ACLED/HDX+GDELT) | Complete | 2026-06-13 | Tier-1; 4 clients on shared cache/config layer; 23 tests pass; FIRMS/ACLED/CHIRPS/HDX live-verified; ReliefWeb→GDELT (DEC-022); DEC-020/021. ⚠ GDELT live re-verify + ACLED 2026-coverage notes |
 | 6 | W4 — Floods → damage | Complete | 2026-06-13 | 63 records (21×3 AOIs); S1 change-det+HAND (DEC-023/024). ✅ **human Tier-2 gate CLOSED** — all 63 `validated`; packet in `outputs/floods/validation_packet/` |
-| 7 | W5 — Fires → damage | Not started | | **Tier-2 human gate** |
+| 7 | W5 — Fires → damage | Complete | 2026-06-13 | **Tier-2 gate CLOSED by human** (all 8 records `validated` vs EMSR811). Hasakah 2026 = 3,758 ha burned cropland (union); Latakia 2026 ≈ 1 ha (July future). DEC-030/031/032. Isolated worktree (parallel w/ S6) |
 | 8 | W6 — Food-security impact layer | Not started | | Validated-only |
 | 9 | W7 — RQ1 flood attribution | Not started | | Reasoning-heavy |
 | 10 | W8 — RQ2 fire attribution | Not started | | Reasoning-heavy |

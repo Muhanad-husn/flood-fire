@@ -1,0 +1,9 @@
+aoi_id,date,phenomenon,severity_class,source_layer,damaged_cropland_ha,validation_status
+hasakah,2026-05-01/2026-06-12,fire,low,S2_dNBR,1335.0567,validated
+hasakah,2026-05-01/2026-06-12,fire,moderate_low,S2_dNBR,1568.7912,validated
+hasakah,2026-05-01/2026-06-12,fire,moderate_high,S2_dNBR,769.3866,validated
+hasakah,2026-05-01/2026-06-12,fire,high,S2_dNBR,84.4446,validated
+latakia,2026-05-01/2026-06-12,fire,low,S2_dNBR,0.6068,validated
+latakia,2026-05-01/2026-06-12,fire,moderate_low,S2_dNBR,0.4721,validated
+latakia,2026-05-01/2026-06-12,fire,moderate_high,S2_dNBR,0.0325,validated
+latakia,2026-05-01/2026-06-12,fire,high,S2_dNBR,0.0,validated

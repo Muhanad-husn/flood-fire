@@ -1,0 +1,13 @@
+aoi_id,window,date,severity_class,ha_union,ha_intersection,is_study
+hasakah,2026,2026-05-01/2026-06-12,low,1335.0567,905.6999,True
+hasakah,2026,2026-05-01/2026-06-12,moderate_low,1568.7912,1267.2465,True
+hasakah,2026,2026-05-01/2026-06-12,moderate_high,769.3866,691.9495,True
+hasakah,2026,2026-05-01/2026-06-12,high,84.4446,78.0473,True
+latakia,2026,2026-05-01/2026-06-12,low,0.6068,0.0,True
+latakia,2026,2026-05-01/2026-06-12,moderate_low,0.4721,0.0325,True
+latakia,2026,2026-05-01/2026-06-12,moderate_high,0.0325,0.0,True
+latakia,2026,2026-05-01/2026-06-12,high,0.0,0.0,True
+latakia,2025_emsr811,2025-07-01/2025-07-20,low,13.2843,7.0124,False
+latakia,2025_emsr811,2025-07-01/2025-07-20,moderate_low,3.1731,1.0841,False
+latakia,2025_emsr811,2025-07-01/2025-07-20,moderate_high,0.5186,0.2919,False
+latakia,2025_emsr811,2025-07-01/2025-07-20,high,0.0,0.0,False

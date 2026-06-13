@@ -127,10 +127,12 @@ def _firms_env(tmp_path, monkeypatch):
     return firms
 
 
-def test_firms_chunks_split_at_10_days(tmp_path, monkeypatch):
+def test_firms_chunks_split_at_max_day_range(tmp_path, monkeypatch):
+    # The FIRMS area API caps day_range at 5 (DEC-030; was 10 when S5 built this).
     firms = _firms_env(tmp_path, monkeypatch)
     chunks = firms._chunks("2026-05-01", "2026-05-25")  # 25 days
-    assert [d for _, d in chunks] == [10, 10, 5]
+    assert [d for _, d in chunks] == [5, 5, 5, 5, 5]
+    assert all(d <= firms._MAX_DAY_RANGE for _, d in chunks)
 
 
 def test_firms_fetch_parses_caches_and_no_repull(tmp_path, monkeypatch):

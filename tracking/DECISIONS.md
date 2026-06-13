@@ -355,3 +355,83 @@ and the downstream impacts; reference the original entry.
     **`max_requests=2`** (not 16) or they trip 429 concurrency errors. Screens and
     exported tiles are cached (`pipelines/floods/_flood_tiles/`, gitignored) so a
     throttled rerun resumes without re-spending quota.
+
+> **Numbering note (S7, parallel with S6).** S6 (floods/W4) and S7 (fires/W5) ran
+> concurrently from the same DEC-022 baseline. To avoid a numbering collision
+> without live coordination, **S7/fires reserved the block DEC-030+**, leaving
+> **DEC-023–029 for S6/floods**. The two sessions both append here, so a git merge
+> will textually conflict at end-of-file — resolve by keeping both blocks (the
+> number ranges are disjoint, so no renumber is needed). If S6 used >7 decisions
+> and reached DEC-030, renumber the *floods* overflow, not these.
+
+- **DEC-030** (S7/W5) — **FIRMS area-API per-request day-range cap corrected from
+  10 to 5** in `clients/firms.py` (`_MAX_DAY_RANGE = 5`). The live API now rejects
+  `day_range > 5` with HTTP 400 `"Invalid day range. Expects [1..5]."` — it
+  accepted 10 when S5 built the client (2026-06-12). Window chunking and the
+  per-chunk caching are otherwise unchanged; a multi-day request still costs
+  `day_range` rate-limit transactions ([[DEC-021]]).
+  - *Why:* upstream contract change — the client must match the live cap or every
+    pull > 5 days fails. Common-sense correctness over the stale literal.
+  - *Downstream:* affects every FIRMS caller (S7 here; S10/RQ2 later). Cache keys
+    include the chunk size, so re-running after this change re-pulls in 5-day units
+    (the old 10-day cache units, if any, are simply not hit — no corruption).
+  - *Flagged for S5/merge:* this is a one-line fix in a client S5 owns; S6/floods
+    does not touch `firms.py`, so no cross-session conflict is expected.
+
+- **DEC-031** (S7/W5) — **A Sentinel-2 dNBR burn scar is counted as fire damage
+  ONLY where it lies within 375 m of a VIIRS active-fire detection** (the
+  "near-fire" confirmation, `active_fire.near_fire_mask`, 375 m = one VIIRS pixel).
+  Burned-cropland hectares = `dNBR-severity ∩ near-fire ∩ cropland`.
+  - *Why:* over cropland, dNBR drops sharply at **harvest and ploughing** too
+    (green crop → bare soil), which would inflate "burned" area with ordinary
+    agricultural turnover. Requiring co-location with an independent active-fire
+    detection (VIIRS, the §6/DEC-006 primary sensor) discriminates *fire* from
+    *harvest* — the discriminator PAX's Sentinel-2 method relies on. Severity
+    thresholds themselves are unchanged ([[DEC-009]] Key & Benson bins).
+  - *Trade-off (documented, for the human gate):* this is **conservative** — a
+    genuine cropland burn that VIIRS missed (small/brief/cloud-gap overpass) is not
+    counted, so the estimate is a **lower bound** on burned cropland. The Tier-2
+    human review (vs EMSR811) judges whether the confirmation is too strict.
+  - *Downstream:* W5 records; the same guard is the template for any fire-scar work
+    (S10/RQ2). Revisit the 375 m buffer here if review finds it clips real scars.
+
+- **DEC-032** (S7/W5) — **Fire DamageRecords carry the UNION-cropland hectares as
+  the in-schema headline; the union-vs-intersection range lives in a companion
+  sensitivity table.** Per [[DEC-015]] damage is reported under both cropland
+  definitions, but the shared schema (§3.2) has one `damaged_cropland_ha` per
+  `(aoi, date, severity)` key. So `outputs/tables/fire_damage.{csv,parquet}` =
+  union headline (`source_layer="S2_dNBR"`, all `unvalidated`);
+  `outputs/tables/fire_damage_sensitivity.csv` = `ha_union, ha_intersection` per
+  key. The **2025 Latakia EMSR811** event is processed as a **method-validation
+  anchor only** (`fire_validation_anchor_emsr811.csv`) — pre-2026 is
+  baseline/context ([[DEC-001]]), never a study damage record.
+  - *Why union headline:* [[DEC-015]] pins union as the headline so cropland
+    extent (hence damage) is not silently under-counted; intersection is the
+    conservative bound. Keeping intersection in a side table avoids two schema rows
+    per key (which would risk a downstream **double-count** in S8 food-security).
+  - *Why a side table, not source_layer encoding:* overloading `source_layer` with
+    a `_union`/`_intersection` suffix would force every downstream consumer to know
+    the convention or double-count; one clean headline + an explicit sensitivity
+    file is safer.
+  - *Flagged for S6/S8 alignment:* S6/floods faces the identical union/intersection
+    question ([[DEC-015]] applies to both pipelines). **Recommend S6 adopt the same
+    convention** (union headline in the schema, range in a sensitivity table) so the
+    food-security layer (S8) reads one consistent headline column across phenomena.
+  - *Headline result (UNVALIDATED, pending Tier-2):* Hasakah 2026 = **3,757.7 ha**
+    burned cropland (union; 2,942.9 ha intersection); Latakia 2026 ≈ **1.1 ha**
+    (2026 season barely begun, the July peak is in the simulated future). EMSR811
+    anchor (2025, forest) = 17 ha *cropland* only — correct, that wildfire burned
+    coastal forest, not cropland; the method check is the *full* scar vs EMSR811.
+
+> **⚠ Cross-pipeline drift to reconcile before S8 (surfaced at the S6×S7 merge,
+> 2026-06-13).** The two pipelines encode the DEC-015 union/intersection
+> sensitivity **differently**: **floods ([[DEC-024]])** carry both inside
+> `source_layer` (`…+cropland_union` vs `…+cropland_intersection`) — two schema
+> rows per key; **fires ([[DEC-032]])** carry the **union** as the single in-schema
+> headline (`source_layer="S2_dNBR"`) and put the range in a companion
+> `fire_damage_sensitivity.csv`. **S8 (food-security) must not naively sum across
+> both pipelines** — for floods it must pick one `source_layer` variant (else
+> double-count), for fires it reads the headline directly. **Human decision needed:**
+> pick one convention for S8 to standardise on (the fires single-headline approach
+> avoids the double-count footgun), or have S8 normalise both on read. Flagged, not
+> silently resolved (Working Rules / CLAUDE.md).
