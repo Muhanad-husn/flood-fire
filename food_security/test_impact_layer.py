@@ -180,3 +180,68 @@ def test_pressure_label_bands():
     assert il.pressure_label(3.0) == "moderate incremental stress"
     assert il.pressure_label(10.0) == "significant incremental stress"
     assert il.pressure_label(25.0) == "severe incremental stress"
+
+
+# --- national widening (DEC-040): fire-only govs counted, flags drive the join ---
+
+def _national_baseline(path: Path, study, nonstudy=()):
+    """Write a minimal multi-gov baseline; `study`/`nonstudy` are (aoi_id, prod_t)."""
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=["gaul_adm1", "aoi_id", "is_study_aoi",
+                                           "cropland_ha", "cropland_share", "cereal_production_2025_t"])
+        w.writeheader()
+        for aoi, prod in study:
+            w.writerow({"gaul_adm1": aoi, "aoi_id": aoi, "is_study_aoi": "True",
+                        "cropland_ha": "1000", "cropland_share": "0", "cereal_production_2025_t": str(prod)})
+        for aoi, prod in nonstudy:
+            w.writerow({"gaul_adm1": aoi, "aoi_id": aoi, "is_study_aoi": "False",
+                        "cropland_ha": "1000", "cropland_share": "0", "cereal_production_2025_t": str(prod)})
+
+
+def test_load_baseline_filters_to_study_flag(tmp_path):
+    baseline = tmp_path / "b.csv"
+    _national_baseline(baseline, study=[("hasakah", 200), ("idlib", 100)],
+                       nonstudy=[("latakia", 50), ("damascus_city", 5)])
+    b = il.load_baseline(baseline)
+    assert set(b) == {"hasakah", "idlib"}            # excluded govs not loaded
+    assert "latakia" not in b and "damascus_city" not in b
+
+
+def test_fire_only_gov_is_counted_after_widening(tmp_path):
+    # A fire-only governorate (e.g. idlib) with no flood records must appear in the
+    # impact rows once flagged study — the bug the national re-run fixes (DEC-040).
+    baseline = tmp_path / "b.csv"
+    _national_baseline(baseline, study=[("hasakah", 200), ("idlib", 100)])
+    fire = tmp_path / "fire.csv"
+    write_csv([
+        _rec("hasakah", "2026-05-01/2026-06-12", "low", "S2_dNBR", 50.0, phenom=Phenomenon.FIRE),
+        _rec("idlib", "2026-05-01/2026-06-12", "moderate_high", "S2_dNBR", 30.0, phenom=Phenomenon.FIRE),
+    ], fire)
+    rows = il.compute_impact(flood_csv=tmp_path / "none.csv", fire_csv=fire,
+                             baseline_csv=baseline, sensitivity_csv=tmp_path / "none.csv")
+    by = {(r.aoi_id, r.phenomenon): r for r in rows}
+    assert ("idlib", "fire") in by                   # fire-only gov now counted
+    assert by[("idlib", "fire")].production_loss_t_headline == 30.0 * (100 / 1000)
+
+
+def test_damaged_gov_missing_from_study_baseline_warns(tmp_path):
+    # If a damaged gov is NOT flagged study, its damage is silently dropped — make
+    # that loud (DEC-040). Tartus here carries fire but is absent from the baseline.
+    baseline = tmp_path / "b.csv"
+    _national_baseline(baseline, study=[("hasakah", 200)])
+    fire = tmp_path / "fire.csv"
+    write_csv([
+        _rec("hasakah", "2026-05-01/2026-06-12", "low", "S2_dNBR", 50.0, phenom=Phenomenon.FIRE),
+        _rec("tartus", "2026-05-01/2026-06-12", "low", "S2_dNBR", 10.0, phenom=Phenomenon.FIRE),
+    ], fire)
+    with pytest.warns(UserWarning, match="tartus"):
+        rows = il.compute_impact(flood_csv=tmp_path / "none.csv", fire_csv=fire,
+                                 baseline_csv=baseline, sensitivity_csv=tmp_path / "none.csv")
+    assert not any(r.aoi_id == "tartus" for r in rows)
+
+
+def test_study_aois_constant_matches_repo_baseline():
+    """The STUDY_AOIS constant must stay in sync with production_baseline.csv flags."""
+    flagged = set(il.load_baseline())               # repo baseline, is_study_aoi==True
+    assert flagged == set(il.STUDY_AOIS)
+    assert "latakia" not in flagged and "damascus_city" not in flagged  # DEC-038

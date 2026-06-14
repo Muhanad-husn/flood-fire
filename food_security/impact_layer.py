@@ -63,7 +63,17 @@ FIRE_SENSITIVITY_CSV = REPO_ROOT / "outputs" / "tables" / "fire_damage_sensitivi
 BASELINE_CSV = REPO_ROOT / "baseline" / "production_baseline.csv"
 OUT_DIR = REPO_ROOT / "outputs" / "food_security"
 
-STUDY_AOIS: tuple[str, ...] = ("deir_ez_zor", "raqqa", "hasakah", "latakia")
+# The food-security study area = the governorates carrying validated 2026 damage
+# (DEC-040, widening the original 4-AOI scope after the S13 national fire re-scope,
+# DEC-037). Floods are on {deir_ez_zor, raqqa, hasakah}; national fire adds 9 more
+# govs, for 12 damaged govs total (the 3 flood govs all also carry fire). Latakia and
+# Damascus City are verified-excluded (negligible 2026 cropland fire, DEC-038) and so
+# are NOT study AOIs here. `load_baseline()` enforces this via the `is_study_aoi` flag
+# in baseline/production_baseline.csv — keep the two in sync.
+STUDY_AOIS: tuple[str, ...] = (
+    "deir_ez_zor", "raqqa", "hasakah", "homs", "aleppo", "rural_damascus",
+    "hama", "quneitra", "tartus", "idlib", "daraa", "suwayda",
+)
 NATIONAL_CEREAL_FLOOR_2025_T = 1_200_000  # FAO/GIEWS ~1.2 Mt floor (DEC-019)
 
 
@@ -288,6 +298,21 @@ def compute_impact(
     fire_dmg = aggregate_fires(records, sensitivity_csv)
     baseline = load_baseline(baseline_csv)
 
+    # Surface (don't silently drop) any AOI that carries validated damage but has no
+    # study baseline — that silent skip is exactly what hid the stale 4-AOI coupling
+    # before the DEC-040 national widening. A dropped AOI means production_baseline.csv
+    # `is_study_aoi` is out of sync with the damage records.
+    damaged_aois = set(flood_dmg) | set(fire_dmg)
+    missing = sorted(a for a in damaged_aois if a not in baseline)
+    if missing:
+        import warnings
+        warnings.warn(
+            f"{len(missing)} governorate(s) carry validated damage but are not flagged "
+            f"is_study_aoi in production_baseline.csv — their damage is NOT counted: "
+            f"{', '.join(missing)}. Reconcile the baseline flags (DEC-040).",
+            stacklevel=2,
+        )
+
     rows: list[AoiImpact] = []
     for dmg_map in (flood_dmg, fire_dmg):
         for aoi, d in sorted(dmg_map.items()):
@@ -414,28 +439,36 @@ def plot_production_loss(rows: Sequence[AoiImpact], out_dir: Path = OUT_DIR) -> 
         return None
 
     apply_theme()
-    aois = sorted({r.aoi_id for r in rows})
     phenom = ["flood", "fire"]
     colors = {"flood": "#1f77b4", "fire": "#d62728"}
     loss = {(r.aoi_id, r.phenomenon): r.production_loss_t_headline for r in rows}
+    # Sort AOIs by combined (flood+fire) headline loss, descending — readable order
+    # for the national (12-gov) set.
+    total_by_aoi: dict[str, float] = defaultdict(float)
+    for r in rows:
+        total_by_aoi[r.aoi_id] += r.production_loss_t_headline
+    aois = sorted(total_by_aoi, key=lambda a: total_by_aoi[a], reverse=True)
 
     import numpy as np
     x = np.arange(len(aois))
     w = 0.38
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(max(8, 0.8 * len(aois)), 5))
     for i, ph in enumerate(phenom):
         vals = [loss.get((a, ph), 0.0) for a in aois]
         ax.bar(x + (i - 0.5) * w, vals, w, label=ph, color=colors[ph])
     ax.set_xticks(x)
-    ax.set_xticklabels([a.replace("_", " ") for a in aois])
+    ax.set_xticklabels([a.replace("_", " ") for a in aois], rotation=45, ha="right")
     ax.set_ylabel("Estimated cereal-production loss (t, headline)")
     ax.set_title("2026 flood & fire production loss vs 2025 drought baseline")
     ax.legend(title="phenomenon")
     caveat_footer(
         fig,
         CAVEATS["validated_only"] + " Loss at conservative 2025 drought-floor yields "
-        "— a lower bound (see IMPACT_README).",
+        "(a lower bound). " + CAVEATS["case_study_2026h1"],
     )
+    # The 12-gov rotated x-labels need more headroom than the shared footer default,
+    # so the labels don't collide with the caveat text.
+    fig.subplots_adjust(bottom=0.30)
     return save_figure(fig, "w6_food_security_production_loss")
 
 
@@ -445,6 +478,7 @@ def write_readme(rows: Sequence[AoiImpact], out_dir: Path = OUT_DIR) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     nat = summarise_national(rows)
     total = next(r for r in nat if r["aoi_id"] == "STUDY_TOTAL")
+    n_aois = sum(1 for r in nat if r["aoi_id"] != "STUDY_TOTAL")
     lines: list[str] = []
     lines.append("# W6 — Food-security impact layer (docs/STRUCTURE.md §3.4)\n")
     lines.append(
@@ -452,7 +486,25 @@ def write_readme(rows: Sequence[AoiImpact], out_dir: Path = OUT_DIR) -> Path:
         "(§3.2, §6) into estimated cereal-production loss and an indicative "
         "food-security pressure, referenced to the 2025 drought baseline (§3.3).\n"
     )
-    lines.append("## Headline (study AOIs, combined flood + fire)\n")
+    lines.append(
+        "\n> ⚠ **First-half-2026 case study — figures are LOWER BOUNDS (DEC-039).** The "
+        "analysis windows cover only the first half of 2026 (floods Mar–Jun; fires "
+        "May 1 – Jun 12). The Syrian harvest/fire season peaks in summer (Jun–Aug), so "
+        "the heaviest crop-fire months are not yet observed. Every figure below is a "
+        "case-study snapshot and a **lower bound** on the full-year total; re-run after "
+        "the season closes for the concluded result. Field/expert verification is the "
+        "gold standard above remote-sensing self-consistency.\n"
+    )
+    lines.append(
+        "\n## Headline (study area: all governorates with validated 2026 damage, "
+        "combined flood + fire)\n"
+    )
+    lines.append(
+        f"- **Study area = {n_aois} governorates** carrying validated 2026 damage — the "
+        "3 flood governorates (Deir ez-Zor, Raqqa, Hasakah) plus the national fire set "
+        "(DEC-037). Latakia and Damascus City are verified-excluded (negligible 2026 "
+        "cropland fire, DEC-038).\n"
+    )
     lines.append(
         f"- **Estimated cereal-production loss:** ~**{total['production_loss_t_headline']:,.0f} t** "
         f"(headline) — range **{total['production_loss_t_low']:,.0f}–"
@@ -460,8 +512,8 @@ def write_readme(rows: Sequence[AoiImpact], out_dir: Path = OUT_DIR) -> Path:
         "(cropland-definition × temporal-aggregation sensitivity).\n"
     )
     lines.append(
-        f"- That is **{total['loss_pct_of_baseline_headline']:.2f}%** of the four study AOIs' "
-        f"combined 2025 baseline ({total['baseline_production_2025_t']:,.0f} t), and "
+        f"- That is **{total['loss_pct_of_baseline_headline']:.2f}%** of the {n_aois} study "
+        f"governorates' combined 2025 baseline ({total['baseline_production_2025_t']:,.0f} t), and "
         f"{100 * total['production_loss_t_headline'] / NATIONAL_CEREAL_FLOOR_2025_T:.2f}% of the "
         f"national ~1.2 Mt 2025 cereal floor.\n"
     )
@@ -519,9 +571,15 @@ def write_readme(rows: Sequence[AoiImpact], out_dir: Path = OUT_DIR) -> Path:
         "- **Damage hectares inherit the pipeline caveats:** flood extent is "
         "open-water riverine inundation (flooded vegetation / pluvial upland "
         "under-detected, DEC-023); burned cropland is VIIRS-confirmed dNBR, a "
-        "conservative lower bound (DEC-031). Latakia 2026 fire ≈ 1 ha because the "
-        "July fire peak is in the simulated future (S7) — a data-availability gap, "
-        "not absence of risk.\n"
+        "conservative lower bound (DEC-031).\n"
+    )
+    lines.append(
+        "- **First-half-2026 scope (DEC-039).** The fire window ends Jun 12 and the "
+        "summer harvest-fire peak (Jun–Aug) is unobserved, so the national fire loss "
+        "is a partial-season lower bound — governorates whose fire season peaks later "
+        "(e.g. Idlib, Daraa, Aleppo) are under-counted here. Latakia/Damascus City are "
+        "excluded as verified-negligible *cropland* fire (DEC-038); Latakia's "
+        "characteristic July fires are coastal forest, not cropland.\n"
     )
     lines.append("\n## Outputs\n")
     lines.append("- `impact_by_aoi.csv` — per AOI × phenomenon: damaged ha (headline/low/season), yield, loss (t), loss % of baseline.\n")

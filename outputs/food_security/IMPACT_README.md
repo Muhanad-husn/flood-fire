@@ -1,8 +1,12 @@
 # W6 — Food-security impact layer (docs/STRUCTURE.md §3.4)
 Translates **human-validated** flood & fire `damaged_cropland_ha` records (§3.2, §6) into estimated cereal-production loss and an indicative food-security pressure, referenced to the 2025 drought baseline (§3.3).
-## Headline (study AOIs, combined flood + fire)
-- **Estimated cereal-production loss:** ~**24,412 t** (headline) — range **2,651–38,432 t** (cropland-definition × temporal-aggregation sensitivity).
-- That is **4.49%** of the four study AOIs' combined 2025 baseline (543,958 t), and 2.03% of the national ~1.2 Mt 2025 cereal floor.
+
+> ⚠ **First-half-2026 case study — figures are LOWER BOUNDS (DEC-039).** The analysis windows cover only the first half of 2026 (floods Mar–Jun; fires May 1 – Jun 12). The Syrian harvest/fire season peaks in summer (Jun–Aug), so the heaviest crop-fire months are not yet observed. Every figure below is a case-study snapshot and a **lower bound** on the full-year total; re-run after the season closes for the concluded result. Field/expert verification is the gold standard above remote-sensing self-consistency.
+
+## Headline (study area: all governorates with validated 2026 damage, combined flood + fire)
+- **Study area = 12 governorates** carrying validated 2026 damage — the 3 flood governorates (Deir ez-Zor, Raqqa, Hasakah) plus the national fire set (DEC-037). Latakia and Damascus City are verified-excluded (negligible 2026 cropland fire, DEC-038).
+- **Estimated cereal-production loss:** ~**25,925 t** (headline) — range **3,471–39,946 t** (cropland-definition × temporal-aggregation sensitivity).
+- That is **2.16%** of the 12 study governorates' combined 2025 baseline (1,198,549 t), and 2.16% of the national ~1.2 Mt 2025 cereal floor.
 - Indicative food-security pressure (study total): **moderate incremental stress** — *not* an IPC phase (see caveats).
 
 ## Method (DEC-033)
@@ -14,7 +18,8 @@ Translates **human-validated** flood & fire `damaged_cropland_ha` records (§3.2
 ## Confidence & caveats (proportionate claims, §9)
 - **Not an IPC classification.** The `food_security_pressure_indicative` label is a qualitative band from production-loss-as-%-of-baseline, **not** an IPC phase. A real phase needs the full IPC protocol (consumption, livelihoods, nutrition, mortality). **GIEWS / FEWS NET / IPC** are the authoritative sources; this layer is a production-shock signal that feeds, not replaces, such an assessment. Syria's 2025 baseline was already a record-drought Crisis-level food-security context (PRODUCT §2) — the 2026 shock is **incremental** pressure on top of that.
 - **Loss is a lower bound** on two counts: conservative drought-floor yield, and the peak-date (not season-union) flood aggregation. The reported range brackets the cropland-definition and temporal-aggregation uncertainty; it does **not** add yield-recovery uncertainty.
-- **Damage hectares inherit the pipeline caveats:** flood extent is open-water riverine inundation (flooded vegetation / pluvial upland under-detected, DEC-023); burned cropland is VIIRS-confirmed dNBR, a conservative lower bound (DEC-031). Latakia 2026 fire ≈ 1 ha because the July fire peak is in the simulated future (S7) — a data-availability gap, not absence of risk.
+- **Damage hectares inherit the pipeline caveats:** flood extent is open-water riverine inundation (flooded vegetation / pluvial upland under-detected, DEC-023); burned cropland is VIIRS-confirmed dNBR, a conservative lower bound (DEC-031).
+- **First-half-2026 scope (DEC-039).** The fire window ends Jun 12 and the summer harvest-fire peak (Jun–Aug) is unobserved, so the national fire loss is a partial-season lower bound — governorates whose fire season peaks later (e.g. Idlib, Daraa, Aleppo) are under-counted here. Latakia/Damascus City are excluded as verified-negligible *cropland* fire (DEC-038); Latakia's characteristic July fires are coastal forest, not cropland.
 
 ## Outputs
 - `impact_by_aoi.csv` — per AOI × phenomenon: damaged ha (headline/low/season), yield, loss (t), loss % of baseline.

@@ -1,6 +1,14 @@
 aoi_id,baseline_production_2025_t,production_loss_t_headline,production_loss_t_low,production_loss_t_season_ref,loss_pct_of_baseline_headline,food_security_pressure_indicative
-deir_ez_zor,65577.0,4952.4,289.3,7706.1,7.552,significant incremental stress
-hasakah,345841.0,9480.1,2161.9,17765.3,2.741,moderate incremental stress
-latakia,1356.0,0.2,0.0,0.2,0.015,marginal
-raqqa,131184.0,9979.2,199.4,12960.6,7.607,significant incremental stress
-STUDY_TOTAL,543958.0,24411.9,2650.6,38432.2,4.488,moderate incremental stress
+aleppo,235306.0,221.3,111.8,221.3,0.094,marginal
+daraa,64806.0,161.2,53.1,161.2,0.249,marginal
+deir_ez_zor,65577.0,4996.6,291.4,7750.3,7.619,significant incremental stress
+hama,94503.0,99.8,43.1,99.8,0.106,marginal
+hasakah,345841.0,9561.8,2218.0,17847.0,2.765,moderate incremental stress
+homs,76073.0,165.3,79.0,165.3,0.217,marginal
+idlib,75069.0,201.3,158.5,201.3,0.268,marginal
+quneitra,20544.0,75.9,17.7,75.9,0.369,marginal
+raqqa,131184.0,10252.8,405.5,13234.2,7.816,significant incremental stress
+rural_damascus,33660.0,117.2,53.7,117.2,0.348,marginal
+suwayda,52600.0,20.8,1.3,20.8,0.04,marginal
+tartus,3386.0,51.4,37.5,51.4,1.518,moderate incremental stress
+STUDY_TOTAL,1198549.0,25925.4,3470.6,39945.7,2.163,moderate incremental stress

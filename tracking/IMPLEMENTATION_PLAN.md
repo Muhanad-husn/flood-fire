@@ -741,6 +741,36 @@ absent — the CSV outputs never depend on a plotting backend.
 
 ---
 
+### S8 re-run (national) — 2026-06-14 (post-S13)
+
+**Status: COMPLETE (2026-06-14).** Re-ran the food-security layer on the national fire
+set (S13/DEC-037) — the prior run was stale (Hasakah-only ~3,758 ha fire + a 4-AOI
+coupling that **silently dropped** the 9 new fire-only governorates). DEC-040 logged.
+
+**What changed (Task A):**
+- **`baseline/production_baseline.csv`** — `aoi_id` filled for **all 14** govs (canonical
+  strings from `governorates.geojson`); `is_study_aoi=True` for the **12 damaged** govs;
+  **False** for Latakia + Damascus City (verified-excluded, DEC-038). Cropland/production
+  columns unchanged (still sums to the 1.2 Mt floor).
+- **`food_security/impact_layer.py`** — `STUDY_AOIS` 4→12; the silent `b is None` skip now
+  emits a `UserWarning` naming any damaged gov lacking a study baseline (surface, don't
+  drop); README/figure national-aware; DEC-039 first-half-2026 / lower-bound caveat stamped
+  (new shared `viz.CAVEATS["case_study_2026h1"]`); figure sorted by loss, 12-label layout.
+- **`food_security/test_impact_layer.py`** — +4 tests (16 pass; full suite 76 pass).
+
+**New headline (validated; first-half-2026 lower bound):** study-area (12 govs) cereal-
+production loss ≈ **25,925 t** (range **3,471–39,946 t**) = **2.16%** of the 12 study govs'
+combined 2025 baseline (≈1.199 Mt) and **2.16%** of the national ~1.2 Mt floor. Floods still
+dominate the tonnage (Raqqa 10.3 kt / Hasakah 9.6 kt / Deir ez-Zor 5.0 kt); the 9 new
+fire-only govs add ~1.1 kt (each *marginal*). The national fire **footprint** tripled
+(~10,533 ha vs 3,758) but its **tonnage** stays modest (drought-floor yield ~0.223 t/ha).
+
+**For S11/S12:** the impact CSVs + figure are refreshed national; the validated record set
+is unchanged (this re-run consumed it, set no `validation_status`). S12 should audit the
+DEC-040 widening + DEC-038 exclusions alongside the gate.
+
+---
+
 ## Session 9: W7 — RQ1: flood attribution (rainfall vs discharge)
 
 **Objective:** Decompose the 2026 flood signal into rainfall-driven vs upstream-dam-release-driven components, with explicit confidence and caveats.
@@ -1090,6 +1120,7 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 6 | W4 — Floods → damage | Complete | 2026-06-13 | 63 records (21×3 AOIs); S1 change-det+HAND (DEC-023/024). ✅ **human Tier-2 gate CLOSED** — all 63 `validated`; packet in `outputs/floods/validation_packet/` |
 | 7 | W5 — Fires → damage | Complete | 2026-06-13 | **Tier-2 gate CLOSED by human** (all 8 records `validated` vs EMSR811). Hasakah 2026 = 3,758 ha burned cropland (union); Latakia 2026 ≈ 1 ha (July future). DEC-030/031/032. Isolated worktree (parallel w/ S6) |
 | 8 | W6 — Food-security impact layer | Complete | 2026-06-13 | Tier-1; validated-only join, 12 tests pass; DEC-033 (union-headline normalisation + flood peak-date no-double-count + conservative drought-floor yield). Study loss ≈24.4 kt (~2.0% of national floor) |
+| 8b | W6 re-run — national food-security | Complete | 2026-06-14 | Tier-1; re-run on national fire set (DEC-037). Study area widened 4→12 damaged govs (DEC-040); `production_baseline.csv` flags + `STUDY_AOIS` updated; Latakia/Damascus City excluded (DEC-038); silent-drop now warns; DEC-039 caveat stamped. 16 tests pass. **Study loss ≈25.9 kt (range 3.5–39.9 kt) = 2.16% of national floor; floods dominate, 9 new fire govs add ~1.1 kt** |
 | 9 | W7 — RQ1 flood attribution | Complete | 2026-06-13 | Tier-1; CHIRPS vs GloFAS decomposition (new `clients/glofas.py` via EWDS `cems-glofas-historical`); 9 tests pass; DEC-034/035. **Finding:** Euphrates AOIs = upstream/transboundary (June ~1,600 m³/s plateau, 0 rain); natural-vs-managed = LOW conf. **⚠ Hasakah June S6 records flagged: no water source (dry Khabur + 0 rain) → likely DEC-023 SAR harvest artifact — recommend S6/S12 re-exam** |
 | 10 | W8 — RQ2 fire attribution | Complete | 2026-06-13 | Tier-1; cropland-null + space-time + temporal overlay; 18 tests pass; DEC-036. **⚠ Live ACLED has no 2026 Syria data (max 2025-06-13) → 2026 study overlay deferred (gap flagged for S12); method built + demonstrated on 2025 window.** Demo finding: 2025 cropland fires **no closer** to armed conflict than cropland baseline → agricultural/seasonal, not conflict-concentrated |
 | 11 | W9 — RQ3 descriptive control overlay | Not started | | Descriptive only |
