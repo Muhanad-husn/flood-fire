@@ -2,18 +2,87 @@
 title: "RQ3 — Damage relative to area of control"
 ---
 
-> **Status: pending W9.** Assembled once `analysis/control_differential.py`
-> produces the descriptive overlay.
-
 ::: {.callout-important}
-**Descriptive only.** This is a spatial overlay of 2026 cropland damage against
-*indicative* government-controlled and former AANES areas. Boundaries are contested
-and treated as indicative only. **No differential or causal claim is made** — it
-maps the distribution of damage, nothing more (`docs/PRODUCT.md` §5, §9; DEC-005).
+**Descriptive only — no comparison is made (DEC-005).** This is a spatial overlay of
+2026 cropland damage against *indicative* government-controlled and former-AANES
+areas. Boundaries are contested and treated as indicative only; the Euphrates split
+of Deir ez-Zor is a **schematic proxy line**, not an authoritative control map.
+**No differential or causal claim is made or implied** — this layer maps *where*
+damage falls, and nothing about either administration faring better or worse
+(`docs/PRODUCT.md` §5, §9).
 :::
 
-Planned figure: validated damage records overlaid on
-`aois/control_areas.geojson`, every figure stamped with
-`viz.CAVEATS["control_areas"]`.
+**Question (`docs/PRODUCT.md` §5).** Descriptively, where does the validated 2026
+cropland damage fall relative to indicative areas of control?
 
-<!-- TODO(W9): overlay validated damage on indicative control areas; caveat footer. -->
+```{python}
+#| label: setup
+#| echo: false
+import sys, pathlib
+import pandas as pd
+
+REPO_ROOT = None
+for _cand in (pathlib.Path.cwd(), *pathlib.Path.cwd().parents):
+    if (_cand / "CLAUDE.md").exists() and (_cand / "viz").is_dir():
+        REPO_ROOT = _cand
+        sys.path.insert(0, str(_cand))
+        break
+assert REPO_ROOT is not None, "could not locate repo root (CLAUDE.md + viz/)"
+RQ3 = REPO_ROOT / "outputs" / "analysis" / "rq3_control_overlay"
+```
+
+## What this is — and is not
+
+- **Is:** a descriptive tabulation of *where* validated 2026 cropland damage falls
+  relative to indicative control zones, at the shared schema's per-AOI granularity.
+- **Is not:** a comparison. Nothing here states or implies that damage was
+  higher/lower, or response better/worse, under either indicative administration.
+
+A deliberate design choice: this page presents the tabulation as a **table, not a
+side-by-side bar chart**, because a comparative chart would visually invite exactly
+the differential reading DEC-005 forbids. Two structural facts make a comparison
+impossible even if one were wanted: **Deir ez-Zor spans both indicative zones** and
+the per-AOI schema cannot apportion its hectares between them (an RQ analysis may not
+read the underlying rasters to do so — cross-reference discipline); and the national
+fire-only governorates have **no drawn control geometry** at all.
+
+## Descriptive tabulation — validated damaged cropland by indicative zone
+
+```{python}
+#| label: tbl-zones
+#| echo: false
+zones = pd.read_csv(RQ3 / "damage_by_indicative_zone.csv")
+view = zones.rename(columns={
+    "indicative_zone": "indicative zone", "aois": "AOIs",
+    "flood_ha_headline_union": "flood ha", "fire_ha_headline_union": "fire ha",
+    "total_ha_headline_union": "total ha",
+})
+view.style.hide(axis="index").format({
+    "flood ha": "{:,.0f}", "fire ha": "{:,.0f}", "total ha": "{:,.0f}",
+})
+```
+
+*Hectares are the union-cropland headline (DEC-015/032); flood figures are the peak
+single event-date extent (no cross-date double-count, DEC-033). Listing side by side
+is descriptive co-location, **not** a comparison.*
+
+- **Deir ez-Zor** is reported as **spanning both** former-AANES (NE) and government
+  (SW of the schematic Euphrates line), **unapportioned** — deliberately, not as an
+  omission.
+- The **national fire-only governorates** (Aleppo, Daraa, Hama, Homs, Idlib,
+  Quneitra, Rural Damascus, Suwayda, Tartus) fall **outside** the drawn indicative
+  control geometry; their burned cropland is reported for transparency with **no
+  zone attributed**. Extending contested boundaries to force an overlay there would
+  itself breach DEC-005.
+
+## Caveats (every artifact carries these)
+
+- INDICATIVE / CONTESTED boundaries — descriptive overlay only (DEC-005). NOT an
+  authoritative control map. No differential or causal claim may be drawn. The
+  Euphrates is a schematic proxy line; control geography is the indicative 2017–2024
+  predominant pattern.
+- Damaged hectares inherit the pipeline caveats: flood extent is open-water riverine
+  inundation (DEC-023); burned cropland is VIIRS-confirmed dNBR, a conservative
+  lower bound (DEC-031).
+- **First-half-2026 scope (DEC-039):** figures are lower bounds; the summer
+  harvest/fire peak is unobserved.

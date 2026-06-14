@@ -7,17 +7,27 @@ subtitle: "Floods and crop fires against the 2025 record-drought baseline"
 
 The 2026 flooding matters because it is an **anomaly on a desertification
 trajectory**, not a recurring hazard. The baseline is drought; the shock is water
-(plus conflict-linked crop fires). This study quantifies how much of Syria's
-tentative 2026 cereal recovery the floods and fires reversed — measured as
-**damaged cropland hectares** translated into production and food-security impact,
-against the 2025 drought baseline.
+(plus crop fires). This study quantifies how much of Syria's tentative 2026 cereal
+recovery the floods and fires reversed — measured as **damaged cropland hectares**
+translated into production and food-security impact, against the 2025 drought
+baseline.
 
-- **2025 — record drought (baseline).** Cereal harvest near 1.2 Mt, ~60%+ below
-  average; ~16.3M people at food-security risk.
-- **2026 — tentative recovery.** Harvest projected to rebound toward ~2.3 Mt.
-- **2026 — the shock.** April floods/hailstorms hit recovering wheat at its
-  critical final growth stage; the late-May Euphrates surge submerged thousands of
-  hectares in Deir ez-Zor and Raqqa.
+- **2025 — record drought (baseline).** FAO/GIEWS put the cereal harvest near
+  **1.2 Mt**, ~60%+ below average and the worst in roughly 60 years; ~16.3M people
+  at food-security risk.
+- **2026 — tentative recovery.** Harvest projected to rebound toward **~2.3 Mt** on
+  more even rainfall, though sowing targets were not fully met.
+- **2026 — the shock.** March and June Euphrates flooding submerged thousands of
+  hectares of recovering cropland in Raqqa and Deir ez-Zor; a national crop-fire
+  signal — Hasakah-dominant — burned cropland across twelve governorates.
+
+::: {.callout-important}
+**First-half-2026 case study (DEC-039).** Every headline figure here covers only
+floods Mar–Jun and fires May 1 – Jun 12 2026. The summer harvest/fire peak
+(Jun–Aug) is unobserved, so all figures are **lower bounds**. Field/expert
+verification is the gold standard above remote-sensing self-consistency; re-run
+post-harvest for the concluded full-year result.
+:::
 
 See [`docs/PRODUCT.md`](../docs/PRODUCT.md) for full intent and the locked research
 questions, and [`docs/STRUCTURE.md`](../docs/STRUCTURE.md) for contracts and
@@ -27,66 +37,134 @@ validation.
 
 Every figure that makes a food-security or research-question claim is built **only
 from human-validated (Tier-2) damage records** — the validation gate
-(`docs/STRUCTURE.md` §6) is enforced in code via `viz.consumable_records()`.
-Unvalidated detections live in the exploration/validation notebooks
-(`notebooks/`), not here. Maps and attribution figures carry their caveats inline.
+(`docs/STRUCTURE.md` §6) is enforced in code via `viz.consumable_records()`. The
+two pipelines (floods S6, fires S13) had their Tier-2 gates closed by a human
+domain expert, not by any agent (DEC-007). Maps and attribution figures carry their
+caveats inline.
 
 ```{python}
 #| label: setup
 #| echo: false
 # Put the repo root on the path so `schema` and `viz` import regardless of the
-# working directory Quarto executes from.
+# working directory Quarto executes from, and expose it for reading the committed
+# validated output tables.
 import sys, pathlib
+import pandas as pd
+
+REPO_ROOT = None
 for _cand in (pathlib.Path.cwd(), *pathlib.Path.cwd().parents):
     if (_cand / "CLAUDE.md").exists() and (_cand / "viz").is_dir():
+        REPO_ROOT = _cand
         sys.path.insert(0, str(_cand))
         break
+assert REPO_ROOT is not None, "could not locate repo root (CLAUDE.md + viz/)"
+OUT = REPO_ROOT / "outputs"
 ```
 
-## Bootstrap example — the presentation path, end to end
+## The validation gate, on the real records
 
-::: {.callout-warning}
-**Illustrative placeholder, not a finding.** The figure below is built from
-synthetic records to prove the render → embed path (seaborn theming, the
-validated-only gate, caveat stamping). It is replaced by real validated outputs as
-the pipelines (W4/W5) and impact layer (W6) land.
-:::
+The headline figures below are normalised in the food-security layer
+(`food_security/impact_layer.py`), which reads **only** validated records. As a
+provenance check, here is the gate applied directly to the raw flood and fire
+damage tables — the count that reaches every claim-bearing figure.
 
 ```{python}
-#| label: fig-bootstrap
-#| fig-cap: "Illustrative only — synthetic data demonstrating the figure pipeline."
+#| label: gate-check
+#| echo: true
+from schema.damage_schema import read_csv
+from viz import consumable_records
+
+flood_recs = read_csv(OUT / "floods" / "flood_damage.csv")
+fire_recs  = read_csv(OUT / "tables" / "fire_damage.csv")
+
+for name, recs in (("flood", flood_recs), ("fire", fire_recs)):
+    kept = consumable_records(recs)
+    print(f"{name:5s}: {len(kept):>3d} validated / {len(recs):>3d} total records "
+          f"reach the report")
+```
+
+## Headline — validated damaged cropland by governorate
+
+The figure uses the canonical per-AOI headline (union cropland, DEC-015; flood
+extent is the peak single event-date so persistent pixels are not double-counted
+across dates, DEC-033). It is the same normalised quantity the food-security loss
+is computed from.
+
+```{python}
+#| label: fig-damage-by-aoi
+#| fig-cap: "Validated 2026 damaged cropland (union-headline ha) by governorate and phenomenon. First-half-2026 lower bound."
 import matplotlib.pyplot as plt
 import seaborn as sns
+from viz import apply_theme, caveat_footer, CAVEATS, PHENOMENON_COLORS
 
-from schema import DamageRecord, Phenomenon, ValidationStatus
-from viz import (
-    apply_theme,
-    consumable_records,
-    records_to_dataframe,
-    caveat_footer,
-    CAVEATS,
-)
-
-# Synthetic records: a mix of validation states. Only the VALIDATED ones should
-# reach the chart — exactly what the report guarantees for real data.
-_demo = [
-    DamageRecord("deir_ez_zor", "2026-05-30", Phenomenon.FLOOD, "high", "S1_GRD", 1820.0, ValidationStatus.VALIDATED),
-    DamageRecord("raqqa",       "2026-05-30", Phenomenon.FLOOD, "high", "S1_GRD", 1240.0, ValidationStatus.VALIDATED),
-    DamageRecord("hasakah",     "2026-06-10", Phenomenon.FIRE,  "moderate", "S2_dNBR", 610.0, ValidationStatus.VALIDATED),
-    DamageRecord("raqqa",       "2026-05-31", Phenomenon.FLOOD, "high", "S1_GRD", 9999.0, ValidationStatus.UNVALIDATED),  # dropped by the gate
-]
+impact = pd.read_csv(OUT / "food_security" / "impact_by_aoi.csv")
+# PHENOMENON_COLORS is keyed by the Phenomenon enum; seaborn's hue holds the
+# string values, so map to value-keyed for the palette.
+pal = {k.value: v for k, v in PHENOMENON_COLORS.items()}
 
 apply_theme()
-df = records_to_dataframe(consumable_records(_demo))   # validated only
-
-fig, ax = plt.subplots(figsize=(7, 4))
-sns.barplot(df, x="aoi_id", y="damaged_cropland_ha", hue="phenomenon", ax=ax)
-ax.set_xlabel("Area of interest")
-ax.set_ylabel("Damaged cropland (ha)")
-ax.set_title("Damaged cropland by AOI (illustrative)")
-caveat_footer(fig, CAVEATS["validated_only"])
+order = (impact.groupby("aoi_id")["damaged_ha_headline_union"].sum()
+               .sort_values(ascending=False).index)
+fig, ax = plt.subplots(figsize=(9, 5))
+sns.barplot(
+    impact, x="aoi_id", y="damaged_ha_headline_union", hue="phenomenon",
+    order=order, palette=pal, ax=ax,
+)
+ax.set_xlabel("Governorate (area of interest)")
+ax.set_ylabel("Damaged cropland — union headline (ha)")
+ax.set_title("Validated 2026 cropland damage: floods dominate the Euphrates AOIs")
+ax.tick_params(axis="x", rotation=35)
+for lbl in ax.get_xticklabels():
+    lbl.set_ha("right")
+caveat_footer(fig, CAVEATS["case_study_2026h1"])
 plt.show()
 ```
 
-The unvalidated Raqqa record (9,999 ha) is absent above — the gate dropped it.
-That is the contract every real figure in this report honours.
+```{python}
+#| label: headline-numbers
+#| echo: false
+nat = pd.read_csv(OUT / "food_security" / "impact_national.csv")
+tot = nat.loc[nat["aoi_id"] == "STUDY_TOTAL"].iloc[0]
+flood_ha = impact.loc[impact.phenomenon == "flood", "damaged_ha_headline_union"].sum()
+fire_ha  = impact.loc[impact.phenomenon == "fire",  "damaged_ha_headline_union"].sum()
+n_fire_govs = impact.loc[impact.phenomenon == "fire", "aoi_id"].nunique()
+
+from IPython.display import Markdown
+Markdown(f"""
+**Headline (first-half-2026 case study, lower bound):**
+
+- **Damaged cropland (union headline):** ~{flood_ha:,.0f} ha flood
+  (3 Euphrates/Khabur AOIs) + ~{fire_ha:,.0f} ha fire ({n_fire_govs} governorates).
+- **Estimated cereal-production loss:** ~**{tot.production_loss_t_headline:,.0f} t**
+  (range {tot.production_loss_t_low:,.0f}–{tot.production_loss_t_season_ref:,.0f} t,
+  from cropland-definition × temporal-aggregation sensitivity).
+- That is **{tot.loss_pct_of_baseline_headline:.2f}%** of the 12-governorate 2025
+  baseline (~1.2 Mt national cereal floor) — *incremental* stress on an
+  already record-drought context, not a standalone crisis.
+""")
+```
+
+The loss is dominated by **riverine flooding on the Euphrates** — **Raqqa** is the
+single largest production loss, followed by **Hasakah** and **Deir ez-Zor**. A
+caution: Hasakah's large flood figure is inflated by the June hectares that
+[RQ1](rq1.qmd) flags as a likely SAR harvest artifact, so it is the most uncertain of
+the three. Fires are spatially widespread (Hasakah-dominant) but each governorate's
+burned cropland is small relative to the flood extent — see
+[Food security](food_security.qmd) for the breakdown and per-AOI loss, and the
+research-question pages for attribution.
+
+## What the research questions found
+
+- **[RQ1 — Flood attribution](rq1.qmd).** The June Euphrates flood is
+  **upstream-sourced** (zero local rainfall, sustained ~1,600 m³/s dry-season
+  discharge, ~6× the drought baseline). Natural-vs-managed release is **LOW
+  confidence** — GloFAS cannot resolve dam operations; the dry-season plateau is
+  *consistent with* managed release but no dam-release fraction is asserted.
+- **[RQ2 — Fire attribution](rq2.qmd).** Live ACLED Syria coverage ends 2025-06-13,
+  so the 2026 conflict overlay **cannot be computed** (data gap, not a finding). The
+  method is demonstrated on the 2025 window: cropland fires sit **no closer** to
+  armed conflict than cropland in general → agricultural/seasonal, not
+  frontline-concentrated. There is no active armed conflict in the 2026 window.
+- **[RQ3 — Damage vs control areas](rq3.qmd).** A **descriptive** overlay only
+  (DEC-005). It maps *where* damage falls relative to indicative control zones; it
+  makes **no** differential or causal claim about either administration.
