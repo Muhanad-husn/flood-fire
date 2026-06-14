@@ -727,3 +727,38 @@ and the downstream impacts; reference the original entry.
     `IMPACT_README.md`, `outputs/figures/w6_food_security_production_loss.png`.
   - *Downstream:* S12 audits this widening + the DEC-038 exclusions; the % loss now reads against
     a near-national denominator, so "% of study baseline" ≈ "% of national floor" by construction.
+
+- **DEC-041** (S11/W9) — **RQ3 descriptive control-area overlay: scope held to the AOIs where
+  indicative control zones are defined; AOI-granular, schema-only, no apportioning, no
+  comparison.** `analysis/control_differential.py` (6 Tier-1 tests). RQ3 is reasoning, not a
+  `damaged_cropland_ha` output → no Tier-2 gate; consumes validated S6/S7 records read-only
+  (§6) and emits no schema records. Implements DEC-005 (descriptive only).
+  - *Hard framing (DEC-005, PRODUCT §5/§9):* the overlay maps **where** validated 2026 cropland
+    damage falls relative to indicative government / former-AANES zones, and **never** states or
+    implies either administration fared better or worse. The module name `control_differential.py`
+    is legacy — it computes **no** differential. Every artifact (finding, both CSVs, the map and
+    its footer) carries the prominent INDICATIVE/CONTESTED caveat; every sentence of framing was
+    audited against DEC-005 and stripped of comparative/causal language.
+  - *Scope decision (the load-bearing call):* `aois/control_areas.geojson` covers only the four
+    original AOIs (Deir ez-Zor split NE/SW by a schematic Euphrates proxy; Raqqa, Hasakah →
+    former_AANES; Latakia → government). **RQ3 stays on those AOIs.** The nine national fire-only
+    governorates ([[DEC-037]]) are **out of geographic scope** — control geometry was never drawn
+    there, and drawing contested boundaries for nine more govs to force an overlay would itself be
+    the authoritative-control-map claim DEC-005 forbids. Their burned cropland (~4,987 ha) is
+    listed **separately** as "outside indicative control-area coverage", **no zone assigned**.
+  - *AOI-granularity honesty:* the shared schema (§3.2) is per-AOI and carries no sub-AOI geometry,
+    and an RQ analysis may **not** read the flood/fire rasters to manufacture one (cross-reference
+    discipline). So **Deir ez-Zor (which spans both indicative zones) is reported as spanning both,
+    UNAPPORTIONED** — deliberately, not as an omission. Apportioning its hectares NE/SW would
+    require reading the pipeline rasters (forbidden) and would invite exactly the comparison DEC-005
+    bans. Per-AOI headline ha reuse `food_security.impact_layer.aggregate_floods/aggregate_fires`
+    (pure schema-level functions) so the same number is reported study-wide.
+  - *Descriptive tabulation (validated, first-half-2026 lower bound [[DEC-039]]):* former_AANES
+    (indicative; Raqqa + Hasakah) = 83,338 ha flood + 5,348 ha fire; Deir ez-Zor (spans both,
+    unapportioned) = 22,166 ha flood + 198 ha fire; outside-coverage national fire govs = 4,987 ha
+    fire. **These are co-located totals, NOT a comparison** — Latakia/government-only AOIs carry no
+    2026 damage, so the table is not even structurally a two-sided contrast. Outputs:
+    `outputs/analysis/rq3_control_overlay/` (`RQ3_FINDING.md`, `damage_by_aoi_zone.csv`,
+    `damage_by_indicative_zone.csv`) and `outputs/figures/w9_rq3_control_overlay.png` (gitignored,
+    [[DEC-008]]).
+  - *Downstream:* S12 audits the descriptive-only framing and the scope/cross-reference choices.

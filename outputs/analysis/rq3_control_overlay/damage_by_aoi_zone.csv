@@ -1,0 +1,16 @@
+aoi_id,phenomenon,damaged_ha_headline_union,indicative_zone,in_scope
+deir_ez_zor,flood,22165.92,spans former_AANES + government (indicative; unapportioned),True
+hasakah,flood,38672.91,former_AANES (indicative),True
+raqqa,flood,44665.02,former_AANES (indicative),True
+aleppo,fire,990.58,outside indicative control-area coverage,False
+daraa,fire,721.53,outside indicative control-area coverage,False
+deir_ez_zor,fire,197.81,spans former_AANES + government (indicative; unapportioned),True
+hama,fire,446.59,outside indicative control-area coverage,False
+hasakah,fire,4123.5,former_AANES (indicative),True
+homs,fire,740.04,outside indicative control-area coverage,False
+idlib,fire,901.17,outside indicative control-area coverage,False
+quneitra,fire,339.65,outside indicative control-area coverage,False
+raqqa,fire,1224.52,former_AANES (indicative),True
+rural_damascus,fire,524.4,outside indicative control-area coverage,False
+suwayda,fire,93.15,outside indicative control-area coverage,False
+tartus,fire,229.99,outside indicative control-area coverage,False

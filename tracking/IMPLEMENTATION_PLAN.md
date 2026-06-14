@@ -1003,14 +1003,35 @@ are ASCII-safe; unicode lives only in the utf-8 files it writes).
 
 ### Completion criteria
 
-- [ ] Descriptive overlay of damage vs indicative control zones produced.
-- [ ] Every output statement is descriptive — no differential or causal claim (audited against DEC-005).
-- [ ] Contested/indicative-boundary caveats are prominent in every artifact.
-- [ ] Framing review logged in `tracking/DECISIONS.md`.
+- [x] Descriptive overlay of damage vs indicative control zones produced. *(`analysis/control_differential.py`; `damage_by_aoi_zone.csv`, `damage_by_indicative_zone.csv`, `RQ3_FINDING.md`, `outputs/figures/w9_rq3_control_overlay.png` — indicative zones + per-AOI validated-damage bubbles.)*
+- [x] Every output statement is descriptive — no differential or causal claim (audited against DEC-005). *(Comparison-free zone labels; "What this is / is not" section; module computes no differential despite the legacy name.)*
+- [x] Contested/indicative-boundary caveats are prominent in every artifact. *(`INDICATIVE_CAVEAT` banner on the finding, the figure footer, the per-feature geojson `caveat`; "spans both, unapportioned" for Deir ez-Zor.)*
+- [x] Framing review logged in `tracking/DECISIONS.md`. *(DEC-041 — scope held to the 4 control-AOI set; national fire govs out of scope; AOI-granular, schema-only, no apportioning.)*
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: COMPLETE (2026-06-14).** Tier-1 (descriptive reasoning; no Tier-2 gate — RQ3
+consumes validated S6/S7 records read-only, emits no schema records, sets no
+`validation_status`). 6 Tier-1 tests pass (`pytest analysis/`). DEC-041 logged.
+
+**The scope decision (the question the task flagged):** `control_areas.geojson` covers only
+the 4 original AOIs. **RQ3 stays there** — the 9 national fire-only govs (DEC-037) are out of
+geographic scope because control geometry was never drawn for them, and inventing contested
+boundaries for them would itself breach DEC-005. Their ~4,987 ha burned cropland is listed
+**separately** ("outside indicative control-area coverage", no zone assigned).
+
+**AOI-granularity honesty:** the schema is per-AOI and RQ analyses may not read pipeline
+rasters (cross-reference discipline), so **Deir ez-Zor (spans both indicative zones) is
+reported unapportioned** — not split. Per-AOI headline ha reuse the food-security
+`aggregate_floods`/`aggregate_fires` (pure schema functions).
+
+**Descriptive result (validated, first-half-2026 lower bound):** former_AANES (Raqqa+Hasakah)
+83,338 ha flood / 5,348 ha fire; Deir ez-Zor (spans both, unapportioned) 22,166 / 198 ha;
+outside-coverage national fire govs 4,987 ha. **Co-located totals, not a comparison** — the
+government-only AOIs (Latakia) carry no 2026 damage, so it isn't even a two-sided contrast.
+
+**For S12:** audit the descriptive-only framing (DEC-005) and the scope/cross-reference choices;
+the RQ3 outputs are validated-only by construction (same gate as S8).
 
 ---
 
@@ -1123,6 +1144,6 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 8b | W6 re-run — national food-security | Complete | 2026-06-14 | Tier-1; re-run on national fire set (DEC-037). Study area widened 4→12 damaged govs (DEC-040); `production_baseline.csv` flags + `STUDY_AOIS` updated; Latakia/Damascus City excluded (DEC-038); silent-drop now warns; DEC-039 caveat stamped. 16 tests pass. **Study loss ≈25.9 kt (range 3.5–39.9 kt) = 2.16% of national floor; floods dominate, 9 new fire govs add ~1.1 kt** |
 | 9 | W7 — RQ1 flood attribution | Complete | 2026-06-13 | Tier-1; CHIRPS vs GloFAS decomposition (new `clients/glofas.py` via EWDS `cems-glofas-historical`); 9 tests pass; DEC-034/035. **Finding:** Euphrates AOIs = upstream/transboundary (June ~1,600 m³/s plateau, 0 rain); natural-vs-managed = LOW conf. **⚠ Hasakah June S6 records flagged: no water source (dry Khabur + 0 rain) → likely DEC-023 SAR harvest artifact — recommend S6/S12 re-exam** |
 | 10 | W8 — RQ2 fire attribution | Complete | 2026-06-13 | Tier-1; cropland-null + space-time + temporal overlay; 18 tests pass; DEC-036. **⚠ Live ACLED has no 2026 Syria data (max 2025-06-13) → 2026 study overlay deferred (gap flagged for S12); method built + demonstrated on 2025 window.** Demo finding: 2025 cropland fires **no closer** to armed conflict than cropland baseline → agricultural/seasonal, not conflict-concentrated |
-| 11 | W9 — RQ3 descriptive control overlay | Not started | | Descriptive only |
+| 11 | W9 — RQ3 descriptive control overlay | Complete | 2026-06-14 | Tier-1; descriptive-only overlay (DEC-041); 6 tests pass. Scope held to the 4 control-AOI set (national fire govs out of scope, ~4,987 ha listed separately); Deir ez-Zor spans both zones, **unapportioned** (AOI-granular, schema-only). No differential/causal claim (DEC-005). `analysis/control_differential.py` + map |
 | 12 | W10 — Verification / reproducibility | Not started | | Audit gate |
 | 13 | National fire re-scope (drop Latakia) | Complete | 2026-06-14 | **Tier-2 gate CLOSED by human** (all 48 records `validated`, 12 govs, ~10,533 ha union; Hasakah 4,124 dom.; corroborates 2026 news). AOIs 4→14; national cropland mask; DEC-037/038/039. Supersedes old 8-record set. **⚠ S8 food-security re-run REQUIRED next** (impact_layer coupled to 4 AOIs). Case-study caveat: first-half-2026, lower bound, re-run post-harvest |
