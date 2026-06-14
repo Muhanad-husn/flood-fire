@@ -152,6 +152,30 @@ def caveat_footer(fig, text: str) -> None:
     )
 
 
+def bar_value_labels(ax, *, fmt: str = "{:,.0f}", fontsize: int = 7,
+                     min_height: float = 0.0, threshold: float | None = None) -> None:
+    """Print each bar's value above it so readers don't eyeball against the axis.
+
+    Skips bars at/below ``min_height`` (e.g. zero-height hue gaps from seaborn's
+    grouped bars). ``threshold`` is an alias kept for readable call sites.
+    """
+    cutoff = threshold if threshold is not None else min_height
+    for container in ax.containers:
+        labels = [fmt.format(v) if v > cutoff else "" for v in container.datavalues]
+        ax.bar_label(container, labels=labels, padding=2, fontsize=fontsize,
+                     color="#333333")
+
+
+def baseline_line(ax, y: float, label: str, *, color: str = "#444444") -> None:
+    """Draw a horizontal reference line (e.g. the 2025 drought baseline/plateau).
+
+    Anchors the 'shock' to the analytical spine visually, not only in prose.
+    """
+    ax.axhline(y, color=color, linestyle="--", linewidth=1.0, zorder=0)
+    ax.text(0.995, y, f" {label}", transform=ax.get_yaxis_transform(),
+            ha="right", va="bottom", fontsize=7.5, style="italic", color=color)
+
+
 def save_figure(fig, name: str, *, dpi: int = 150) -> Path:
     """Save a figure to outputs/figures/<name>.png and return its path.
 

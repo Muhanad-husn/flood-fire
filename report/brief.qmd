@@ -1,0 +1,99 @@
+---
+title: "Executive brief"
+subtitle: "Syria 2026 agricultural shocks — first-half-2026 snapshot"
+toc: false
+---
+
+```{python}
+#| label: setup
+#| echo: false
+import sys, pathlib
+import pandas as pd
+
+REPO_ROOT = None
+for _cand in (pathlib.Path.cwd(), *pathlib.Path.cwd().parents):
+    if (_cand / "CLAUDE.md").exists() and (_cand / "viz").is_dir():
+        REPO_ROOT = _cand
+        sys.path.insert(0, str(_cand))
+        break
+assert REPO_ROOT is not None, "could not locate repo root (CLAUDE.md + viz/)"
+OUT = REPO_ROOT / "outputs"
+nat = pd.read_csv(OUT / "food_security" / "impact_national.csv")
+impact = pd.read_csv(OUT / "food_security" / "impact_by_aoi.csv")
+tot = nat.loc[nat["aoi_id"] == "STUDY_TOTAL"].iloc[0]
+flood_ha = impact.loc[impact.phenomenon == "flood", "damaged_ha_headline_union"].sum()
+fire_ha = impact.loc[impact.phenomenon == "fire", "damaged_ha_headline_union"].sum()
+```
+
+<a class="print-button" href="javascript:window.print()">🖨 Print / Save as PDF</a>
+
+::: {.key-findings}
+### The bottom line
+
+[The 2026 floods and crop fires reversed only a **fraction** of Syria's tentative 2026
+cereal recovery — real and concentrated, not a second collapse.]{.headline-number style="font-size:1.15rem;"}
+
+```{python}
+#| label: brief-numbers
+#| echo: false
+from IPython.display import Markdown
+Markdown(f"""
+- **~{tot.production_loss_t_headline:,.0f} t** cereal-production loss (lower bound;
+  honest range **{tot.production_loss_t_low:,.0f}–{tot.production_loss_t_season_ref:,.0f} t**).
+- **{tot.loss_pct_of_baseline_headline:.2f}%** of the 2025 drought floor; concentrated
+  on the **Euphrates** (Raqqa and Deir ez-Zor each ~7–8% of their own baseline).
+- **~{flood_ha:,.0f} ha** flooded + **~{fire_ha:,.0f} ha** burned cropland.
+""")
+```
+:::
+
+**The spine.** Syria's 2025 baseline was a **record drought** (cereal harvest near
+1.2 Mt, worst in ~60 years). 2026 brought a **tentative recovery** (projected ~2.3 Mt)
+— then a **shock**: Euphrates flooding (an anomaly on a desertification trajectory)
+plus a national crop-fire signal. This study measures how much of the recovery the
+shock took back.
+
+```{python}
+#| label: brief-map
+#| echo: false
+#| fig-format: png
+#| fig-dpi: 200
+#| fig-cap: "2026 cropland-production loss as a share of each governorate's 2025 baseline. First-half-2026 lower bound."
+#| fig-alt: "Choropleth map of Syria shaded by 2026 cropland-production loss as a percent of the 2025 baseline; Raqqa and Deir ez-Zor darkest at about 7.6 to 7.8 percent, Hasakah 2.8 percent, all others pale, Latakia and Damascus City grey."
+from viz import choropleth, caveat_footer, CAVEATS
+import matplotlib.pyplot as plt
+govs = nat[nat.aoi_id != "STUDY_TOTAL"]
+vals = dict(zip(govs.aoi_id, govs.loss_pct_of_baseline_headline))
+fig = choropleth(vals, title="2026 cropland-production loss (% of 2025 baseline)",
+                 cbar_label="loss, % of 2025 baseline", value_fmt="{:.1f}%")
+caveat_footer(fig, CAVEATS["case_study_2026h1"])
+plt.show()
+```
+
+### The three caveats that matter most
+
+1. **These are lower bounds.** The snapshot covers floods Mar–Jun and fires May 1 –
+   Jun 12 2026; the summer harvest and fire peak is unobserved. Re-run post-harvest for
+   the concluded result ([DEC-039](glossary.qmd#dec-039)).
+2. **One flood figure is flagged.** Hasakah's June flood hectares have no water source
+   and are a likely radar harvest artifact ([RQ1](rq1.qmd)). Excluding them moves the
+   national total only ~5%, so the headline is robust.
+3. **Not an IPC classification.** This is a production-shock signal that *feeds* a
+   GIEWS / FEWS NET / IPC assessment, layered on an already record-drought baseline. It
+   is not an IPC phase.
+
+### What the attribution found
+
+- **Floods** are **upstream-sourced** Euphrates water (zero local rainfall, ~6× the
+  drought-season discharge). Natural-versus-managed release is **not resolvable** from
+  the data ([RQ1](rq1.qmd)).
+- **Fires** are an **agricultural drought and heat hazard**, not frontline-linked; the
+  2026 conflict overlay cannot be computed (ACLED data gap) and there is no active armed
+  conflict in the window ([RQ2](rq2.qmd)).
+- **Geography** of damage is mapped descriptively against indicative control areas,
+  with **no comparative claim** ([RQ3](rq3.qmd)).
+
+For the full method, evidence, and per-governorate detail, see the
+[Overview](index.qmd) and [Food security](food_security.qmd) pages.
+
+{{< include _footer.qmd >}}

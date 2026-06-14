@@ -792,3 +792,44 @@ and the downstream impacts; reference the original entry.
     lower-bound headline figures**, pending the recommended post-harvest re-run and field/expert
     verification ([[DEC-039]]). Guard test: `analysis/test_verify.py` asserts the audit reports no
     hard FAIL on committed state (regression guard). 85 tests pass total.
+
+- **DEC-043** (peer-review pass) — **Report restructured findings-first for a humanitarian/
+  policy/journalist reader, with the methods rigor preserved underneath; choropleth maps drawn
+  pure-matplotlib (no geo stack) to keep the render env light.** Implements an external peer
+  review. **No caveat was softened and no headline number changed** — the review's first
+  instruction, and the project's credibility engine, is the epistemic discipline (§9).
+  - *What changed (presentation only):* (1) **a governorate loss-% choropleth** — the study's one
+    missing element, a map of *where* damage falls — on the Overview, Food-security, and Brief
+    pages; (2) **findings-first** reordering with a "key findings at a glance" block (method now
+    follows the answer); (3) a **headline-excluding-RQ1-flagged-hectares** robustness figure
+    (Food security) — recomputes the study total dropping the flagged Hasakah-June dates back to
+    the attributed March peak: **25,925 t → 24,536 t, a 5.4% move**, so the headline is *robust*
+    to the flag (the [[DEC-033]] peak-single-date rule already prevents the flagged June dates from
+    compounding); (4) the RQ2 proximity table's 2026 `nan` cells now render as "—/n/a — no ACLED
+    2026"; (5) **DEC-codes moved out of reader-facing prose into a linked plain-language
+    [glossary] page** (`glossary.qmd`); (6) confidence rendered as **HIGH/MED/LOW/GAP pills**
+    (`styles.css`) and per-RQ confidence strips; (7) figures gain **value labels, baseline/plateau
+    reference lines, the flagged Hasakah bar hatched + annotated on-chart, and alt text**; (8) a
+    **one-page executive brief** (`brief.qmd`, print/save-as-PDF), an **RQ index** (`rq.qmd`) with
+    prev/next nav so RQ pages are not stranded, a **citation/provenance footer** (`_footer.qmd`)
+    on every page, **GitHub data-download links** under figures, and the broken `docs/*.md`
+    relative links repointed to GitHub blob URLs.
+  - *Map-stack deviation from [[DEC-008]] (surfaced, not silent — CLAUDE.md Working Rules):*
+    DEC-008 names **geopandas + contextily** for static thematic maps. The maps here
+    (`viz/maps.py::choropleth`) instead read `aois/governorates.geojson` with stdlib `json` +
+    matplotlib patches, with a pure-Python RDP geometry simplifier. *Why:* the report render env
+    (`report/requirements.txt`) is deliberately geo-stack-free (DEC-008 *Rules*: light render,
+    `freeze: auto`), and the publish workflow installs only pandas/matplotlib/seaborn/jupyter.
+    Pulling geopandas/GDAL into CI to draw 14 filled polygons is disproportionate. This **does not
+    reopen** DEC-008 (still static Quarto/matplotlib, figures rebuilt in-cell from validated
+    tables); it is an implementation choice *within* it. A governorate-loss map makes **no**
+    comparative claim — the [[DEC-005]] concern is the RQ3 *control-zone* overlay, which remains a
+    table, not a map. Figures default to SVG (crisp on mobile); the choropleth stays vector but
+    simplified (~0.3 MB).
+  - *Verification:* every page's Python cells execute against the committed validated tables, and
+    the full site **renders cleanly under Quarto 1.9.38** (same major as the CI `quarto-actions`
+    setup). The validation gate, lower-bound framing, and all confidence labels are unchanged.
+  - *Downstream:* the post-harvest re-run ([[DEC-039]]) inherits the new layout for free (figures
+    rebuild from whatever validated tables are current). An optional CI-rendered PDF (tinytex/typst)
+    was deferred to avoid risking the live Pages deploy from an unverifiable LaTeX step — the brief
+    is print-to-PDF instead.

@@ -1,0 +1,23 @@
+:::: {.report-footer}
+**Syria 2026 Agricultural Shocks** · first-half-2026 snapshot (floods Mar–Jun;
+fires May 1 – Jun 12 2026) · figures are lower bounds (DEC-039).
+Author: Muhanad Abulhusn. Rendered from human-validated (Tier-2) records only.
+
+**Data sources:** FAO/GIEWS (baseline & production), GloFAS (discharge), CHIRPS
+(rainfall), VIIRS/FIRMS (active fire), Sentinel-1/2 & Copernicus EMS (flood/burn
+extent), ACLED (conflict, cited not republished). License: CC BY 4.0.
+
+Suggested citation:
+
+::: {.cite-block}
+Abulhusn, M. (2026). *Syria 2026 Agricultural Shocks: floods and crop fires against
+the 2025 record-drought baseline* (first-half-2026 snapshot).
+https://muhanad-husn.github.io/flood-fire/
+:::
+
+Provenance & contracts:
+[PRODUCT.md](https://github.com/Muhanad-husn/flood-fire/blob/main/docs/PRODUCT.md) ·
+[STRUCTURE.md](https://github.com/Muhanad-husn/flood-fire/blob/main/docs/STRUCTURE.md) ·
+[decision log](https://github.com/Muhanad-husn/flood-fire/blob/main/tracking/DECISIONS.md) ·
+[source repo](https://github.com/Muhanad-husn/flood-fire)
+::::

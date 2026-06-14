@@ -2,18 +2,28 @@
 title: "RQ3 — Damage relative to area of control"
 ---
 
-::: {.callout-important}
-**Descriptive only — no comparison is made (DEC-005).** This is a spatial overlay of
-2026 cropland damage against *indicative* government-controlled and former-AANES
-areas. Boundaries are contested and treated as indicative only; the Euphrates split
-of Deir ez-Zor is a **schematic proxy line**, not an authoritative control map.
-**No differential or causal claim is made or implied** — this layer maps *where*
-damage falls, and nothing about either administration faring better or worse
-(`docs/PRODUCT.md` §5, §9).
+::: {.callout-tip appearance="simple"}
+**In one line (3 of 3 research questions).** This page maps *where* 2026 cropland
+damage falls relative to indicative areas of control. It is **descriptive only** and
+makes **no** claim that either administration fared better, worse, or caused anything.
+We deliberately present a table, not a comparison chart.
 :::
 
-**Question (`docs/PRODUCT.md` §5).** Descriptively, where does the validated 2026
-cropland damage fall relative to indicative areas of control?
+::: {.conf-strip}
+[Damage-vs-control framing]{.conf-item} [DESCRIPTIVE ONLY — NO COMPARISON]{.pill .pill-gap}
+:::
+
+::: {.callout-important}
+**Descriptive only — no comparison is made ([DEC-005](glossary.qmd#dec-005)).** This is
+a spatial overlay of 2026 cropland damage against *indicative* government-controlled
+and former-AANES areas. Boundaries are contested and treated as indicative only; the
+Euphrates split of Deir ez-Zor is a **schematic proxy line**, not an authoritative
+control map. **No differential or causal claim is made or implied.** This layer maps
+*where* damage falls, and nothing about either administration faring better or worse.
+:::
+
+**Question.** Descriptively, where does the validated 2026 cropland damage fall
+relative to indicative areas of control?
 
 ```{python}
 #| label: setup
@@ -31,20 +41,22 @@ assert REPO_ROOT is not None, "could not locate repo root (CLAUDE.md + viz/)"
 RQ3 = REPO_ROOT / "outputs" / "analysis" / "rq3_control_overlay"
 ```
 
-## What this is — and is not
+## Why a table, and why no comparison — the responsible-analysis choice
 
-- **Is:** a descriptive tabulation of *where* validated 2026 cropland damage falls
-  relative to indicative control zones, at the shared schema's per-AOI granularity.
-- **Is not:** a comparison. Nothing here states or implies that damage was
-  higher/lower, or response better/worse, under either indicative administration.
+This is the teaching moment of the study, so it is stated up front rather than buried.
+A side-by-side bar chart of "damage under administration A versus B" would visually
+**invite** the differential reading that [DEC-005](glossary.qmd#dec-005) forbids, even
+with a caveat attached. So the page presents a **table, not a chart**, on purpose.
 
-A deliberate design choice: this page presents the tabulation as a **table, not a
-side-by-side bar chart**, because a comparative chart would visually invite exactly
-the differential reading DEC-005 forbids. Two structural facts make a comparison
-impossible even if one were wanted: **Deir ez-Zor spans both indicative zones** and
-the per-AOI schema cannot apportion its hectares between them (an RQ analysis may not
-read the underlying rasters to do so — cross-reference discipline); and the national
-fire-only governorates have **no drawn control geometry** at all.
+Two structural facts make a comparison impossible even if one were wanted:
+
+1. **Deir ez-Zor spans both indicative zones**, and the per-AOI schema cannot
+   apportion its hectares between them. An RQ analysis may not read the underlying
+   rasters to do so (cross-reference discipline), so its hectares are reported
+   **unapportioned**.
+2. The national **fire-only governorates have no drawn control geometry** at all.
+   Extending contested boundaries to force an overlay there would itself breach
+   DEC-005.
 
 ## Descriptive tabulation — validated damaged cropland by indicative zone
 
@@ -57,32 +69,39 @@ view = zones.rename(columns={
     "flood_ha_headline_union": "flood ha", "fire_ha_headline_union": "fire ha",
     "total_ha_headline_union": "total ha",
 })
-view.style.hide(axis="index").format({
-    "flood ha": "{:,.0f}", "fire ha": "{:,.0f}", "total ha": "{:,.0f}",
-})
+(view.style.hide(axis="index")
+     .format({"flood ha": "{:,.0f}", "fire ha": "{:,.0f}", "total ha": "{:,.0f}"}))
 ```
 
-*Hectares are the union-cropland headline (DEC-015/032); flood figures are the peak
-single event-date extent (no cross-date double-count, DEC-033). Listing side by side
-is descriptive co-location, **not** a comparison.*
+[↓ Zone tabulation (damage_by_indicative_zone.csv)](https://github.com/Muhanad-husn/flood-fire/blob/main/outputs/analysis/rq3_control_overlay/damage_by_indicative_zone.csv){.data-download}
+
+*Hectares are the union-cropland headline; flood figures are the peak single
+event-date extent (no cross-date double-count, [DEC-033](glossary.qmd#dec-033)).
+Listing side by side is descriptive co-location, **not** a comparison.*
 
 - **Deir ez-Zor** is reported as **spanning both** former-AANES (NE) and government
-  (SW of the schematic Euphrates line), **unapportioned** — deliberately, not as an
+  (SW of the schematic Euphrates line), **unapportioned**, deliberately and not as an
   omission.
 - The **national fire-only governorates** (Aleppo, Daraa, Hama, Homs, Idlib,
   Quneitra, Rural Damascus, Suwayda, Tartus) fall **outside** the drawn indicative
-  control geometry; their burned cropland is reported for transparency with **no
-  zone attributed**. Extending contested boundaries to force an overlay there would
-  itself breach DEC-005.
+  control geometry; their burned cropland is reported for transparency with **no zone
+  attributed**.
 
 ## Caveats (every artifact carries these)
 
-- INDICATIVE / CONTESTED boundaries — descriptive overlay only (DEC-005). NOT an
-  authoritative control map. No differential or causal claim may be drawn. The
-  Euphrates is a schematic proxy line; control geography is the indicative 2017–2024
-  predominant pattern.
+- Indicative and contested boundaries, descriptive overlay only
+  ([DEC-005](glossary.qmd#dec-005)). NOT an authoritative control map. No differential
+  or causal claim may be drawn. The Euphrates is a schematic proxy line; control
+  geography is the indicative 2017–2024 predominant pattern.
 - Damaged hectares inherit the pipeline caveats: flood extent is open-water riverine
-  inundation (DEC-023); burned cropland is VIIRS-confirmed dNBR, a conservative
-  lower bound (DEC-031).
-- **First-half-2026 scope (DEC-039):** figures are lower bounds; the summer
-  harvest/fire peak is unobserved.
+  inundation ([DEC-023](glossary.qmd#dec-023)); burned cropland is VIIRS-confirmed and
+  a conservative lower bound ([DEC-031](glossary.qmd#dec-031)).
+- **First-half-2026 scope ([DEC-039](glossary.qmd#dec-039)):** figures are lower
+  bounds; the summer harvest and fire peak is unobserved.
+
+::: {.page-nav}
+[← RQ2 — Fire attribution](rq2.qmd)
+[All three questions →](rq.qmd)
+:::
+
+{{< include _footer.qmd >}}

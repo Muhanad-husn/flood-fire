@@ -1,0 +1,54 @@
+---
+title: "Research questions"
+subtitle: "The three secondary questions behind the food-security headline"
+---
+
+The primary question is the [food-security impact](food_security.qmd). Three secondary
+questions interrogate the *attribution* and *geography* of the damage. Each is kept
+proportionate to its evidence, with confidence labelled, not implied.
+
+## [RQ1 — Flood attribution](rq1.qmd)
+
+::: {.conf-strip}
+[Source split]{.conf-item} [HIGH]{.pill .pill-high}
+&nbsp;·&nbsp; [Natural vs managed release]{.conf-item} [LOW]{.pill .pill-low}
+:::
+
+How much of the 2026 flood is rainfall-driven versus upstream (transboundary)
+discharge, and was the discharge natural or a managed dam release? The damaging June
+Euphrates flood is **upstream-sourced** water in a rainless dry season; Hasakah's June
+"flood" has no water source and is flagged as a likely radar artifact. Natural versus
+managed release is not resolvable from the available reanalysis data.
+
+→ [Read RQ1](rq1.qmd)
+
+## [RQ2 — Fire attribution](rq2.qmd)
+
+::: {.conf-strip}
+[Method (2025 demo)]{.conf-item} [HIGH]{.pill .pill-high}
+&nbsp;·&nbsp; [2026 conflict linkage]{.conf-item} [DATA GAP]{.pill .pill-gap}
+:::
+
+Are the 2026 crop fires concentrated along conflict frontlines? The 2026 conflict
+overlay **cannot be computed** (ACLED coverage ends 2025-06-13), and there is no active
+armed conflict in the 2026 window. On the 2025 demonstration year, crop fires sit **no
+closer to fighting than ordinary farmland is** — agricultural and seasonal, not a
+frontline signal.
+
+→ [Read RQ2](rq2.qmd)
+
+## [RQ3 — Damage relative to area of control](rq3.qmd)
+
+::: {.conf-strip}
+[Damage-vs-control framing]{.conf-item} [DESCRIPTIVE ONLY]{.pill .pill-gap}
+:::
+
+Where does the validated 2026 cropland damage fall relative to indicative areas of
+control? This is a **descriptive overlay only** ([DEC-005](glossary.qmd#dec-005)): it
+maps *where* damage falls and makes no claim that either administration fared better,
+worse, or caused anything. It is deliberately presented as a table, not a comparison
+chart.
+
+→ [Read RQ3](rq3.qmd)
+
+{{< include _footer.qmd >}}
