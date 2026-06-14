@@ -762,3 +762,33 @@ and the downstream impacts; reference the original entry.
     `damage_by_indicative_zone.csv`) and `outputs/figures/w9_rq3_control_overlay.png` (gitignored,
     [[DEC-008]]).
   - *Downstream:* S12 audits the descriptive-only framing and the scope/cross-reference choices.
+
+- **DEC-042** (S12/W10) — **Verification pass: a reproducible audit module (`analysis/verify.py`)
+  + report (`tracking/VERIFICATION_REPORT.md`), guarded by tests.** The §7 W10 holistic audit.
+  Confirms the product-level definition of done (PRODUCT §6) and surfaces the known gaps. Tier-1
+  (read-only over committed artifacts; sets no `validation_status` — it cannot, §6/[[DEC-007]]).
+  - *What it checks (all reproducible from the committed outputs):* (1) **schema conformance** —
+    all 63 flood + 48 fire records validate against §3.2 (severity vocab per phenomenon,
+    non-negative ha, non-damage classes == 0 ha); (2) **validation-gate integrity** — every
+    consumed record is human-`validated`, `gate_records(strict)` REFUSES a non-validated record,
+    and **no code path can confer `validated`** (DamageRecord defaults to UNVALIDATED;
+    `validate_record` cannot promote it — only a human edit does); (3) **reproducibility** — the
+    deterministic schema→food-security→RQ3 chain recomputes from the committed CSVs (study-total
+    25,925 t, 12 govs; RQ3 no out-of-scope leak), CSV↔Parquet round-trips losslessly ([[DEC-010]]),
+    `environment.yml` pins the stack, pulls are cached/checkpointed ([[DEC-020]]); (4) the **six
+    PRODUCT §6 criteria**, each PASS except RQ2 (GAP, see below).
+  - *Result:* **15 PASS · 0 FAIL · 1 GAP.** The one non-PASS is **§6.4 RQ2** — a known
+    data-availability gap (live ACLED Syria ends 2025-06-13, no 2026 events; [[DEC-036]]), not a
+    code defect: method built + 2025-demonstrated, re-runs with no code change once ACLED ingests
+    2026 Syria.
+  - *Known gaps recorded (surfaced, not resolved — CLAUDE.md):* RQ2 ACLED-2026 ([[DEC-036]]); the
+    **Hasakah-June flood flag** ([[DEC-035]] — 3 validated June dates with no water source, the
+    [[DEC-023]] SAR harvest-artifact mode; RQ1 excludes them; revisit at the re-run via an
+    independent flood product; floods still dominate the food-security tonnage via the Euphrates
+    AOIs, so the headline is not overturned); the **first-half-2026 case-study scope** ([[DEC-039]]
+    — every figure a lower bound, post-harvest re-run recommended); the cropland union/intersection
+    spread ([[DEC-015]]).
+  - *Verdict:* the study meets its definition of done **as a first-half-2026 case study with
+    lower-bound headline figures**, pending the recommended post-harvest re-run and field/expert
+    verification ([[DEC-039]]). Guard test: `analysis/test_verify.py` asserts the audit reports no
+    hard FAIL on committed state (regression guard). 85 tests pass total.
