@@ -1,0 +1,14 @@
+# Lightweight dependencies to RENDER the Quarto report (report/*.qmd).
+#
+# The report cells read only the committed validated output tables and rebuild
+# figures in-cell via the local `viz` package — they do NOT import the geo stack
+# (geopandas/rasterio/GDAL) or earthengine, and they never pull from GEE. So
+# rendering needs far less than the analysis `f_f` conda env: just a Jupyter
+# kernel plus the plotting/data libs the cells use.
+#
+# Used by .github/workflows/publish-report.yml. For a full local re-run of the
+# pipelines (not just the report), use environment.yml / the `f_f` conda env.
+jupyter
+pandas
+matplotlib
+seaborn
