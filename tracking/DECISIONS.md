@@ -637,3 +637,30 @@ and the downstream impacts; reference the original entry.
   - *Downstream:* S8 (food-security) re-runs on the national fire records; the
     `production_baseline.csv` already covers all 14 governorates ([[DEC-019]]) so the join
     extends cleanly. S12 audits the re-scope + the superseded-validation note.
+
+- **DEC-038** (S13) — **Latakia and Damascus City verified-excluded from the 2026 fire study
+  records (negligible cropland fire), confirmed by running the full S7 method, not just the
+  hotspot scan.** Both remain canonical AOIs (in `governorates.geojson`; the national cropland
+  mask covers them) but carry `pipelines: []` — they are **assessed and found negligible**, not
+  silently dropped. Prompted by the user (domain expert) asking to double-check both before
+  recording it for best practice.
+  - *Evidence (full method: S2 dNBR ∩ VIIRS near-fire 375 m ∩ DEC-015 cropland, 2026 window
+    May 1 – Jun 12):*
+    - **Latakia** — 9 VIIRS hotspots over 3 dates → **1.05 ha union / 0.03 ha intersection**
+      burned cropland, against **9,881 ha** of cropland in the governorate (≈0.01 %).
+    - **Damascus City** — 2 hotspots → **4.47 ha union / 0 ha intersection** (the 4.47 ha is all
+      low-severity in the DW/WC disagreement fringe), against **546 ha** cropland (a 109 km²
+      urban governorate).
+  - *Caveats kept honest (§9):* (1) the figures are **negligible, not literally zero** — both
+    are below any materiality threshold and ≈0 at high-confidence (intersection). (2) **Latakia
+    seasonal/land-cover caveat:** the window ends Jun 12 and Latakia's fire season peaks in
+    **July**, but Latakia's characteristic fires are coastal **forest**, not cropland — the 2025
+    EMSR811 (July) was a large forest scar with only ~17 ha touching cropland ([[DEC-032]]). So
+    Latakia is correctly outside a *cropland*-fire study regardless of season. Damascus City is
+    urban with negligible cropland by nature (no seasonal caveat).
+  - *Consequence:* the [[DEC-037]] re-scope is **complete and defensible** — all 14 governorates
+    were assessed for 2026 cropland fire; **12 carry material fire** (the 48 study records), **2
+    are verified negligible** and excluded. This closes the loop on the original error (Latakia
+    was a 2025 *forest* artifact): it is now excluded on **2026 cropland-fire evidence**, not on
+    a stale 2025 anchor. No study record is emitted for either; both are documented here so the
+    exclusion is auditable (S12).
