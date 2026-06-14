@@ -685,3 +685,45 @@ and the downstream impacts; reference the original entry.
     food-security headline outputs and any report; (b) the post-harvest re-run is the recommended
     next milestone (≈ after Jul–Aug 2026); (c) S12 verification records this as the study's
     headline scope caveat. See the project memory `case-study-first-half-2026-rerun`.
+
+- **DEC-040** (S8 re-run) — **Food-security study area widened from the 4 original AOIs to the
+  12 governorates carrying validated 2026 damage**, after the S13 national fire re-scope
+  ([[DEC-037]]) left the food-security layer stale (it was built on the old Hasakah-only
+  ~3,758 ha fire figure and the 4-AOI coupling silently dropped the 9 new fire govs). Extends
+  the study-area scope of [[DEC-019]] / [[DEC-033]]; method (the §3.4 join) is unchanged.
+  - *Why it was needed:* `food_security/impact_layer.py` gated the join on
+    `production_baseline.csv`'s `is_study_aoi` flag, and only the original 4 (Deir ez-Zor,
+    Raqqa, Hasakah, Latakia) were flagged. So the national fire records (12 govs, ~10,533 ha
+    union, [[DEC-037]]) for the 9 fire-only govs (Aleppo, Idlib, Daraa, Homs, Hama, Rural
+    Damascus, Quneitra, Tartus, Suwayda) were read into `aggregate_fires` but then **silently
+    skipped** at the baseline join (`if b is None: continue`) — the result understated the
+    national fire footprint.
+  - *What changed:*
+    - **`baseline/production_baseline.csv`** — `aoi_id` filled for **all 14** governorates
+      (canonical strings from `aois/governorates.geojson`); `is_study_aoi=True` for the **12
+      damaged govs**; `is_study_aoi=False` for **Latakia + Damascus City** (verified-excluded,
+      negligible 2026 cropland fire — [[DEC-038]]). The cropland/production columns are
+      unchanged ([[DEC-019]], still sums to the 1.2 Mt floor).
+    - **`food_security/impact_layer.py`** — `STUDY_AOIS` updated 4→12 (the damaged govs);
+      `load_baseline()` still drives the actual join via the `is_study_aoi` flag (so the
+      constant and the CSV must stay in sync — a new test asserts equality). The previously
+      silent `b is None` skip now emits a `UserWarning` naming any damaged gov missing a study
+      baseline (surface, don't silently drop — CLAUDE.md). README/figure made national-aware
+      (no more "four AOIs"); the [[DEC-039]] first-half-2026 / lower-bound caveat is stamped on
+      the README banner and the figure footer (new shared `viz.CAVEATS["case_study_2026h1"]`).
+    - **`food_security/test_impact_layer.py`** — +4 tests (study-flag filtering, fire-only gov
+      now counted, missing-baseline warning, STUDY_AOIS↔CSV sync); **16 pass**.
+  - *New headline result (validated records; first-half-2026 lower bound, [[DEC-039]]):*
+    study-area (12 govs) combined cereal-production loss ≈ **25,925 t** (headline; range
+    **3,471–39,946 t**) = **2.16%** of the 12 study govs' combined 2025 baseline (≈1.199 Mt —
+    essentially the whole national floor, as only Latakia+Damascus City's ~1.45 kt are excluded)
+    and **2.16%** of the national ~1.2 Mt floor. Floods still dominate the tonnage (Raqqa 10,253 t
+    / Deir ez-Zor 4,997 t / Hasakah 9,562 t — *significant*/*moderate* incremental stress); the 9
+    new fire-only govs add ~1,114 t (each *marginal*: Aleppo 221, Idlib 201, Homs 165, Daraa 161,
+    Rural Damascus 117, Hama 100, Quneitra 76, Tartus 51, Suwayda 21). The national fire footprint
+    grew (~10,533 ha vs the old 3,758) but its **tonnage** contribution stays modest because the
+    drought-floor yield is ~0.223 t/ha and most new-gov fires are small ([[DEC-033]] conservative
+    yield). Outputs: `outputs/food_security/impact_by_aoi.csv`, `impact_national.csv`,
+    `IMPACT_README.md`, `outputs/figures/w6_food_security_production_loss.png`.
+  - *Downstream:* S12 audits this widening + the DEC-038 exclusions; the % loss now reads against
+    a near-national denominator, so "% of study baseline" ≈ "% of national floor" by construction.

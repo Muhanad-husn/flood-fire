@@ -65,6 +65,11 @@ CAVEATS: dict[str, str] = {
         "Shows human-validated (Tier-2) records only; unvalidated detections are "
         "excluded (docs/STRUCTURE.md §6)."
     ),
+    "case_study_2026h1": (
+        "First-half-2026 case study (floods Mar–Jun; fires May 1 – Jun 12). The "
+        "summer harvest/fire peak is unobserved, so headline figures are LOWER "
+        "BOUNDS — re-run post-harvest for the full-year result (DEC-039)."
+    ),
 }
 
 
