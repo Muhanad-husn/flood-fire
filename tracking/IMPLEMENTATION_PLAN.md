@@ -1058,14 +1058,31 @@ This is the `plan-sessions` verification session (§7 W10). It confirms the prod
 
 ### Completion criteria
 
-- [ ] Clean-checkout reproducibility confirmed (env, auth, caching, pinned/verified IDs).
-- [ ] All `DamageRecord`s schema-conformant; downstream validated-only gate proven by test.
-- [ ] No downstream-consumed record was validated by anything but a human (audited).
-- [ ] PRODUCT.md §6 success criteria checked; gaps listed.
+- [x] Clean-checkout reproducibility confirmed (env, auth, caching, pinned/verified IDs). *(`repro.*` checks: environment.yml pins the stack; the deterministic schema→food-security→RQ3 chain recomputes from committed CSVs; CSV↔Parquet round-trips lossless; pulls cached/checkpointed; GEE IDs verified (DEC-013), non-interactive auth (DEC-012). The validated damage CSVs+parquets are git-tracked. Tier-2 raster re-gen needs GEE (Restricted Mode, cached).)*
+- [x] All `DamageRecord`s schema-conformant; downstream validated-only gate proven by test. *(`schema.conformance` PASS — 63 flood + 48 fire; `gate.refuses_unvalidated` PASS; `analysis/test_verify.py` + `food_security`/`analysis` gate tests.)*
+- [x] No downstream-consumed record was validated by anything but a human (audited). *(`gate.no_self_certification` PASS — default UNVALIDATED, `validate_record` cannot promote; validated status traces to the human S6/S7/S13 Tier-2 gates.)*
+- [x] PRODUCT.md §6 success criteria checked; gaps listed. *(All six checked: 5 PASS, RQ2 GAP (ACLED-2026, DEC-036). Known gaps recorded: DEC-036, DEC-035 Hasakah-June, DEC-039 case-study scope, DEC-015 cropland spread.)*
 
 ### Handoff notes
 
-_(filled in during execution)_
+**Status: COMPLETE (2026-06-14).** Tier-1 holistic audit. Built a **reproducible**
+verification module (`analysis/verify.py`) that audits schema conformance, the
+validated-only gate (incl. no agent self-certification), deterministic-chain
+reproducibility, and the PRODUCT §6 criteria, emitting `tracking/VERIFICATION_REPORT.md`.
+**15 PASS · 0 FAIL · 1 GAP** (RQ2 ACLED-2026, known). Guarded by `analysis/test_verify.py`
+(no hard FAIL on committed state). 85 tests pass total. DEC-042 logged.
+
+**Verdict:** the study meets its product-level definition of done **as a first-half-2026
+case study with lower-bound headline figures** (DEC-039), pending the recommended
+post-harvest re-run and field/expert verification. The single non-PASS (§6.4 RQ2) is a
+data-availability gap, not a code defect — it re-runs with no code change once ACLED
+ingests 2026 Syria.
+
+**Known gaps recorded (surfaced for the human):** RQ2 ACLED-2026 (DEC-036); the
+Hasakah-June flood flag (DEC-035 — revisit at the re-run via an independent flood product;
+floods still dominate the food-security tonnage via the Euphrates AOIs, so the headline
+holds); the first-half-2026 case-study scope (DEC-039); the cropland union/intersection
+spread (DEC-015).
 
 ---
 
@@ -1145,5 +1162,5 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 9 | W7 — RQ1 flood attribution | Complete | 2026-06-13 | Tier-1; CHIRPS vs GloFAS decomposition (new `clients/glofas.py` via EWDS `cems-glofas-historical`); 9 tests pass; DEC-034/035. **Finding:** Euphrates AOIs = upstream/transboundary (June ~1,600 m³/s plateau, 0 rain); natural-vs-managed = LOW conf. **⚠ Hasakah June S6 records flagged: no water source (dry Khabur + 0 rain) → likely DEC-023 SAR harvest artifact — recommend S6/S12 re-exam** |
 | 10 | W8 — RQ2 fire attribution | Complete | 2026-06-13 | Tier-1; cropland-null + space-time + temporal overlay; 18 tests pass; DEC-036. **⚠ Live ACLED has no 2026 Syria data (max 2025-06-13) → 2026 study overlay deferred (gap flagged for S12); method built + demonstrated on 2025 window.** Demo finding: 2025 cropland fires **no closer** to armed conflict than cropland baseline → agricultural/seasonal, not conflict-concentrated |
 | 11 | W9 — RQ3 descriptive control overlay | Complete | 2026-06-14 | Tier-1; descriptive-only overlay (DEC-041); 6 tests pass. Scope held to the 4 control-AOI set (national fire govs out of scope, ~4,987 ha listed separately); Deir ez-Zor spans both zones, **unapportioned** (AOI-granular, schema-only). No differential/causal claim (DEC-005). `analysis/control_differential.py` + map |
-| 12 | W10 — Verification / reproducibility | Not started | | Audit gate |
+| 12 | W10 — Verification / reproducibility | Complete | 2026-06-14 | Tier-1; reproducible audit (`analysis/verify.py` → `tracking/VERIFICATION_REPORT.md`); **15 PASS · 0 FAIL · 1 GAP** (RQ2 ACLED-2026). Schema conformance, validated-only gate (no self-cert), deterministic-chain repro all confirmed; gaps DEC-036/035/039/015 recorded; DEC-042. 85 tests pass. Verdict: DoD met as first-half-2026 case study (lower bounds) |
 | 13 | National fire re-scope (drop Latakia) | Complete | 2026-06-14 | **Tier-2 gate CLOSED by human** (all 48 records `validated`, 12 govs, ~10,533 ha union; Hasakah 4,124 dom.; corroborates 2026 news). AOIs 4→14; national cropland mask; DEC-037/038/039. Supersedes old 8-record set. **⚠ S8 food-security re-run REQUIRED next** (impact_layer coupled to 4 AOIs). Case-study caveat: first-half-2026, lower bound, re-run post-harvest |
