@@ -5,10 +5,24 @@ study's findings. It is the project's portfolio output, not a dashboard.
 
 Pages:
 
-- `index.qmd` — overview, the drought→recovery→shock spine, headline figures.
+- `index.qmd` — overview, findings-first; the loss map, the drought→recovery→shock
+  spine, headline figures.
+- `brief.qmd` — one-page executive brief (the forwardable artifact); print/save-as-PDF.
 - `food_security.qmd` — the primary question: production loss and indicative
-  food-security pressure, per governorate.
-- `rq1.qmd` / `rq2.qmd` / `rq3.qmd` — the three research questions.
+  food-security pressure, per governorate, plus the loss map and the
+  headline-excluding-flagged-hectares robustness check.
+- `rq.qmd` — research-questions index; `rq1.qmd` / `rq2.qmd` / `rq3.qmd` — the three.
+- `glossary.qmd` — plain-language meaning of the `DEC-NNN` / `§` method codes; the
+  narrative pages link their codes here to keep prose readable.
+
+Shared bits: `styles.css` (confidence pills, key-findings/footer blocks, print CSS),
+`_footer.qmd` (the citation/provenance block, `{{< include >}}`d on every page).
+
+Maps are drawn by `viz.choropleth` straight from `aois/governorates.geojson` with
+matplotlib + stdlib `json` only — **no geopandas** — so the render env stays light
+(see `requirements.txt`). A governorate-loss map makes no comparative claim (the
+DEC-005 concern is the control-zone overlay only). Figures default to SVG for crisp
+mobile rendering; the choropleth cells override to PNG.
 
 ## The contract every figure honours
 

@@ -1,0 +1,46 @@
+---
+title: "Glossary & decision log"
+subtitle: "Plain-language meaning of the method codes referenced across the report"
+---
+
+The report keeps a full audit trail: every method choice has a numbered decision
+(`DEC-NNN`) in the [decision log](https://github.com/Muhanad-husn/flood-fire/blob/main/tracking/DECISIONS.md),
+and the contracts live in `docs/`. Those codes signal rigor but are not something a
+reader needs to follow the findings. This page translates the ones the report cites
+into one plain sentence each, so the narrative pages can stay readable while the
+provenance stays one click away.
+
+## Decision codes
+
+| Code | What it means in plain language |
+|---|---|
+| <span id="dec-005">**DEC-005**</span> | The control-area view (RQ3) is **descriptive only** — it maps *where* damage falls, never claims one administration fared better or caused anything. |
+| <span id="dec-007">**DEC-007**</span> | The validation gate is closed by a **human domain expert**, never by an automated agent. Tests passing is not the same as correctness. |
+| <span id="dec-008">**DEC-008**</span> | The report is a **static, reproducible website** (no live server); every figure is rebuilt from committed, validated data at render time. |
+| <span id="dec-015">**DEC-015**</span> | Cropland is measured **two ways** — UNION of two land-cover datasets (the headline) and their INTERSECTION (a conservative low bound). |
+| <span id="dec-017">**DEC-017**</span> | The 2025 rainfall deficit is the Nov–May season total minus the 1991–2020 climatological normal. |
+| <span id="dec-019">**DEC-019**</span> | The 2025 ~1.2 Mt national cereal floor is split across governorates by **cropland-area share** (a uniform-yield assumption, stated as a limitation). |
+| <span id="dec-023">**DEC-023**</span> | Flood extent is **radar (SAR) open-water detection**. Dry or harvested June fields can mimic open water in radar — the source of the Hasakah-June flag. |
+| <span id="dec-031">**DEC-031**</span> | A burn scar counts as fire damage **only where a VIIRS active-fire detection confirms it within 375 m** — this separates fire from ordinary harvest/ploughing and makes the estimate a lower bound. |
+| <span id="dec-032">**DEC-032**</span> | Fire damage is carried as a single union headline per governorate, with the union/intersection range in a companion table. |
+| <span id="dec-033">**DEC-033**</span> | The food-security layer reads **validated records only**, normalises everything to the union headline, and uses each flood AOI's **peak single event-date** so standing water is not double-counted across dates. Loss = hectares × the conservative 2025 drought-floor yield. |
+| <span id="dec-037">**DEC-037**</span> | The fire pipeline runs **nationally** (all governorates with 2026 cropland fire) and frames fire as a **drought-and-heat agricultural hazard**, not a conflict story. |
+| <span id="dec-038">**DEC-038**</span> | Latakia and Damascus City were checked with the **full method** and found to have negligible cropland fire — **verified-excluded, not silently dropped**. |
+| <span id="dec-039">**DEC-039**</span> | This is a **first-half-2026 snapshot** (floods Mar–Jun; fires May 1 – Jun 12). The summer harvest/fire peak is unobserved, so every figure is a **lower bound**. |
+
+## Document & section references
+
+| Code | What it points to |
+|---|---|
+| **§3.3** | The 2025 drought baseline the 2026 shock is measured against. |
+| **§3.4** | The food-security join: damaged hectares → production loss → indicative pressure. |
+| **§5** | The locked research questions (RQ1–RQ3). |
+| **§6** | The validation tiers; Tier-2 outputs (damage hectares) require human sign-off. |
+| **§9** | The proportionate-claims discipline: causal claims kept within the evidence. |
+| **S6 / S13** | The flood / fire pipeline work sessions whose Tier-2 gates a human closed. |
+
+::: {.report-footer}
+Full text: the [decision log](https://github.com/Muhanad-husn/flood-fire/blob/main/tracking/DECISIONS.md) ·
+[PRODUCT.md](https://github.com/Muhanad-husn/flood-fire/blob/main/docs/PRODUCT.md) ·
+[STRUCTURE.md](https://github.com/Muhanad-husn/flood-fire/blob/main/docs/STRUCTURE.md).
+:::

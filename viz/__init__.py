@@ -11,10 +11,13 @@ and enforces two project rules in code:
     (docs/PRODUCT.md §5, §9).
 """
 
+from .maps import choropleth
 from .style import (
     CAVEATS,
     PHENOMENON_COLORS,
     apply_theme,
+    bar_value_labels,
+    baseline_line,
     caveat_footer,
     consumable_records,
     records_to_dataframe,
@@ -26,7 +29,10 @@ __all__ = [
     "CAVEATS",
     "PHENOMENON_COLORS",
     "apply_theme",
+    "bar_value_labels",
+    "baseline_line",
     "caveat_footer",
+    "choropleth",
     "consumable_records",
     "records_to_dataframe",
     "save_figure",

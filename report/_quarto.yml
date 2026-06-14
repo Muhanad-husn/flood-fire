@@ -27,23 +27,34 @@ website:
     left:
       - href: index.qmd
         text: Overview
+      - href: brief.qmd
+        text: "Executive brief"
       - href: food_security.qmd
         text: Food security
       - text: "Research questions"
         menu:
+          - href: rq.qmd
+            text: "All three questions"
           - href: rq1.qmd
             text: "RQ1 — Flood attribution"
           - href: rq2.qmd
             text: "RQ2 — Fire attribution"
           - href: rq3.qmd
             text: "RQ3 — Damage vs control areas"
+  page-footer:
+    center: >-
+      First-half-2026 snapshot · CC BY 4.0 · data: FAO/GIEWS, GloFAS, CHIRPS,
+      VIIRS/FIRMS, ACLED, Copernicus EMS · citation on each page.
 
 format:
   html:
     theme: cosmo
+    css: styles.css
     toc: true
     code-fold: true
     code-tools: true
     embed-resources: false
-    fig-format: png
+    # SVG by default so the small bar/line charts stay crisp at any width (mobile).
+    # The choropleth cells override to PNG (detailed boundaries → smaller raster).
+    fig-format: svg
     fig-dpi: 150

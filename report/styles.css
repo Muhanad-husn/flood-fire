@@ -1,0 +1,113 @@
+/* Report look beyond the Quarto `cosmo` theme.
+ *
+ * Three jobs: (1) make the epistemic discipline VISIBLE — HIGH/MED/LOW confidence
+ * render as coloured pills; (2) give findings-first blocks and the citation footer
+ * a distinct, scannable style; (3) keep the executive brief clean when printed /
+ * saved as PDF. Pure CSS — no JS, no build step, DEC-008-safe. */
+
+/* --- confidence pills -------------------------------------------------------
+ * Used inline as e.g.  [HIGH]{.pill .pill-high}  and in `.conf-strip` rows.
+ * The colour carries the same argument the prose already makes, at a glance. */
+.pill {
+  display: inline-block;
+  padding: 0.08em 0.6em;
+  border-radius: 999px;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.pill-high { background: #d6f0dc; color: #1b5e2b; border: 1px solid #9fd5ad; }
+.pill-med  { background: #fdeccd; color: #8a5a00; border: 1px solid #f1c878; }
+.pill-low  { background: #fbdcdc; color: #9b1c1c; border: 1px solid #efa6a6; }
+.pill-gap  { background: #e4e7eb; color: #3a4252; border: 1px solid #c2c8d0; }
+
+/* A one-row confidence summary near each RQ headline. */
+.conf-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+  align-items: center;
+  margin: 0.75rem 0 1.25rem;
+  padding: 0.7rem 0.9rem;
+  background: #f7f8fa;
+  border: 1px solid #e3e6ea;
+  border-left: 4px solid #8a93a3;
+  border-radius: 6px;
+  font-size: 0.92em;
+}
+.conf-strip .conf-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+/* --- key-findings (findings-first) block ----------------------------------- */
+.key-findings {
+  background: #eef4fb;
+  border: 1px solid #cfe0f3;
+  border-left: 5px solid #1f77b4;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 0 0 1.5rem;
+}
+.key-findings h2, .key-findings h3 { margin-top: 0; }
+.key-findings .headline-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #14334f;
+}
+
+/* --- citation / provenance footer ------------------------------------------ */
+.report-footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 2px solid #e3e6ea;
+  font-size: 0.85em;
+  color: #555;
+}
+.report-footer .cite-block {
+  background: #f7f8fa;
+  border: 1px solid #e3e6ea;
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 0.9em;
+  white-space: pre-wrap;
+}
+
+/* prev / next page nav at the foot of the RQ pages */
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  font-size: 0.95em;
+}
+.page-nav .nav-spacer { flex: 1; }
+
+/* download-this-data links under figures */
+.data-download { font-size: 0.85em; color: #666; margin: -0.5rem 0 1.5rem; }
+.data-download a { text-decoration: none; }
+.data-download a::before { content: "\2193  "; } /* down arrow */
+
+/* --- print / save-as-PDF (executive brief) --------------------------------- */
+@media print {
+  .quarto-title-banner, #quarto-sidebar, .navbar, .page-nav,
+  #quarto-margin-sidebar, .nav-footer, .data-download { display: none !important; }
+  body { font-size: 11pt; }
+  .key-findings, .conf-strip { break-inside: avoid; }
+  figure, table { break-inside: avoid; }
+  a[href]::after { content: ""; } /* don't print raw URLs */
+}
+
+.print-button {
+  display: inline-block;
+  margin: 0.5rem 0 1.5rem;
+  padding: 0.45rem 1rem;
+  background: #1f77b4;
+  color: #fff !important;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+@media print { .print-button { display: none !important; } }
