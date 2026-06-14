@@ -2,18 +2,160 @@
 title: "Food-security impact"
 ---
 
-> **Status: pending W6.** This page is assembled once the food-security impact
-> layer (`food_security/impact_layer.py`) produces validated outputs.
+The primary research question (`docs/PRODUCT.md` §5): **how much of the 2026 cereal
+recovery did the floods and fires reverse, and where** — `damaged_cropland_ha` →
+estimated production loss → indicative food-security pressure, referenced against
+the 2025 drought baseline (`docs/STRUCTURE.md` §3.3, §3.4).
 
-The primary question (`docs/PRODUCT.md` §5): how much of the 2026 cereal recovery
-did the floods and fires reverse, and where — `damaged_cropland_ha` → estimated
-production loss → food-security phase delta, joined to GIEWS / FEWS NET / IPC and
-referenced against the 2025 drought baseline (`docs/STRUCTURE.md` §3.3, §3.4).
+::: {.callout-important}
+**First-half-2026 case study — figures are LOWER BOUNDS (DEC-039).** Windows cover
+floods Mar–Jun and fires May 1 – Jun 12. The harvest/fire season peaks in summer
+(Jun–Aug), so the heaviest crop-fire months are unobserved. Re-run after the season
+closes for the concluded result; field/expert verification is preferred over
+remote-sensing self-consistency.
+:::
 
-Planned figures (built via `viz`, validated records only):
+## The whiplash
 
-- The drought → recovery → shock **whiplash** chart (`analysis/whiplash.py`).
-- Damaged cropland and estimated production loss per AOI per event window.
-- Food-security phase delta against the 2025 baseline.
+The study's spine is a three-state sequence — **drought → tentative recovery →
+shock** — and the question is how much of the recovery the 2026 shock took back.
 
-<!-- TODO(W6): import validated impact records; build figures via viz helpers. -->
+| State | Cereal production | Note |
+|---|---:|---|
+| 2025 — record drought (baseline) | ~1.20 Mt | ~60%+ below average; worst in ~60 years (FAO/GIEWS) |
+| 2026 — tentative recovery (projected) | ~2.30 Mt | more even rainfall; sowing targets not fully met |
+| 2026 — observed first-half shock | see below | floods + fires, validated damage only |
+
+The recovery figure is an external projection (context). The shock is measured here
+from **human-validated damage records only**, normalised through
+`food_security/impact_layer.py` (DEC-033). What follows is that measured shock.
+
+```{python}
+#| label: setup
+#| echo: false
+import sys, pathlib
+import pandas as pd
+
+REPO_ROOT = None
+for _cand in (pathlib.Path.cwd(), *pathlib.Path.cwd().parents):
+    if (_cand / "CLAUDE.md").exists() and (_cand / "viz").is_dir():
+        REPO_ROOT = _cand
+        sys.path.insert(0, str(_cand))
+        break
+assert REPO_ROOT is not None, "could not locate repo root (CLAUDE.md + viz/)"
+OUT = REPO_ROOT / "outputs"
+```
+
+```{python}
+#| label: headline
+#| echo: false
+nat = pd.read_csv(OUT / "food_security" / "impact_national.csv")
+tot = nat.loc[nat["aoi_id"] == "STUDY_TOTAL"].iloc[0]
+n_govs = (nat["aoi_id"] != "STUDY_TOTAL").sum()
+
+from IPython.display import Markdown
+Markdown(f"""
+**Headline — study area = {n_govs} governorates carrying validated 2026 damage**
+(3 flood AOIs + the national fire set; Latakia and Damascus City verified-excluded,
+DEC-038):
+
+- **Estimated cereal-production loss:** ~**{tot.production_loss_t_headline:,.0f} t**
+  (headline), range **{tot.production_loss_t_low:,.0f}–{tot.production_loss_t_season_ref:,.0f} t**
+  (cropland-definition × temporal-aggregation sensitivity).
+- **{tot.loss_pct_of_baseline_headline:.2f}%** of the combined 2025 baseline
+  ({tot.baseline_production_2025_t:,.0f} t) — i.e. ~2.16% of the national ~1.2 Mt floor.
+- Indicative food-security pressure (study total): **{tot.food_security_pressure_indicative}**
+  — *not* an IPC phase (see caveats).
+""")
+```
+
+## Production loss by governorate
+
+```{python}
+#| label: fig-loss-by-aoi
+#| fig-cap: "Estimated 2026 cereal-production loss (headline t) by governorate and phenomenon. Floods on the Euphrates dominate; the national fire set adds a broad but individually small contribution. First-half-2026 lower bound."
+import matplotlib.pyplot as plt
+import seaborn as sns
+from viz import apply_theme, caveat_footer, CAVEATS, PHENOMENON_COLORS
+
+impact = pd.read_csv(OUT / "food_security" / "impact_by_aoi.csv")
+pal = {k.value: v for k, v in PHENOMENON_COLORS.items()}
+
+apply_theme()
+order = (impact.groupby("aoi_id")["production_loss_t_headline"].sum()
+               .sort_values(ascending=False).index)
+fig, ax = plt.subplots(figsize=(9, 5))
+sns.barplot(
+    impact, x="aoi_id", y="production_loss_t_headline", hue="phenomenon",
+    order=order, palette=pal, ax=ax,
+)
+ax.set_xlabel("Governorate")
+ax.set_ylabel("Estimated production loss — headline (t)")
+ax.set_title("2026 cereal-production loss by governorate and phenomenon")
+ax.tick_params(axis="x", rotation=35)
+for lbl in ax.get_xticklabels():
+    lbl.set_ha("right")
+caveat_footer(fig, CAVEATS["case_study_2026h1"])
+plt.show()
+```
+
+## Per-governorate detail
+
+Loss as a share of each governorate's own 2025 baseline shows where the shock bites
+hardest in *relative* terms — the Euphrates flood AOIs (Raqqa, Deir ez-Zor) lose
+~7–8% of their baseline, well above the study-wide ~2%.
+
+```{python}
+#| label: tbl-per-aoi
+#| echo: false
+cols = ["aoi_id", "baseline_production_2025_t", "production_loss_t_headline",
+        "production_loss_t_low", "production_loss_t_season_ref",
+        "loss_pct_of_baseline_headline", "food_security_pressure_indicative"]
+view = (nat[nat["aoi_id"] != "STUDY_TOTAL"]
+        .sort_values("production_loss_t_headline", ascending=False)[cols]
+        .rename(columns={
+            "aoi_id": "governorate",
+            "baseline_production_2025_t": "baseline 2025 (t)",
+            "production_loss_t_headline": "loss headline (t)",
+            "production_loss_t_low": "loss low (t)",
+            "production_loss_t_season_ref": "loss season-ref (t)",
+            "loss_pct_of_baseline_headline": "loss % of baseline",
+            "food_security_pressure_indicative": "indicative pressure",
+        }))
+view.style.hide(axis="index").format({
+    "baseline 2025 (t)": "{:,.0f}", "loss headline (t)": "{:,.1f}",
+    "loss low (t)": "{:,.1f}", "loss season-ref (t)": "{:,.1f}",
+    "loss % of baseline": "{:.2f}",
+})
+```
+
+## Method (DEC-033) and what the numbers are not
+
+- **Validated-only gate (§6).** Only `is_consumable()` records are read; a single
+  non-validated record makes the layer refuse. No agent set any `validation_status`
+  — the flood (S6) and fire (S13) Tier-2 gates were closed by a human.
+- **One cropland convention.** UNION cropland (DEC-015) is the headline,
+  INTERSECTION the conservative low bound. Flood records (per event-date) are
+  collapsed to the **peak single event-date** so persistent pixels are not
+  double-counted across dates; the season-reference column is the upper bracket.
+- **Loss = ha × 2025 drought-floor yield** (~0.223 t/ha, DEC-019). Applying the
+  *drought-year* yield to 2026 damaged area makes the loss a **conservative lower
+  bound** — 2026 was a recovery year, so expected yields on the lost hectares were
+  higher.
+
+::: {.callout-warning}
+**Not an IPC classification.** `indicative pressure` is a qualitative band from
+loss-as-%-of-baseline, **not** an IPC phase (which needs the full protocol —
+consumption, livelihoods, nutrition, mortality). GIEWS / FEWS NET / IPC are the
+authoritative sources; this layer is a production-shock signal that *feeds* such an
+assessment. Syria's 2025 baseline was already a record-drought, Crisis-level
+context — the 2026 shock is **incremental** pressure on top of that.
+:::
+
+::: {.callout-note}
+**Damage hectares inherit the pipeline caveats.** Flood extent is open-water
+riverine inundation (flooded vegetation and pluvial upland under-detected, DEC-023);
+burned cropland is VIIRS-confirmed dNBR, a conservative lower bound (DEC-031). See
+[RQ1](rq1.qmd) for the flagged Hasakah-June flood hectares, which RQ1 excludes from
+attribution as a likely SAR harvest artifact.
+:::
