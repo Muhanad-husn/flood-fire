@@ -664,3 +664,24 @@ and the downstream impacts; reference the original entry.
     was a 2025 *forest* artifact): it is now excluded on **2026 cropland-fire evidence**, not on
     a stale 2025 anchor. No study record is emitted for either; both are documented here so the
     exclusion is auditable (S12).
+
+- **DEC-039** (S13) — **The study is a FIRST-HALF-2026 case study; the conclusive whole-year
+  research requires a post-harvest re-run, and field/expert verification is the gold standard.**
+  Recorded at the user's instruction (domain-expert validator) when closing the fire Tier-2 gate
+  (2026-06-14). A study-wide caveat, not specific to fires.
+  - *Temporal scope:* the analysis windows cover only the **first half of 2026** — floods
+    Mar–Jun, fires the available VIIRS NRT slice **May 1 – Jun 12** (the simulated "today"). The
+    Syrian **harvest/fire season peaks in summer (Jun–Aug)**, so the heaviest crop-fire months are
+    **not yet observed** (this is why Latakia/Idlib/Daraa totals are partial — [[DEC-037]]/[[DEC-038]]).
+    The pipeline is **reproducible by design**: re-running it after the season closes (with updated
+    FIRMS, Sentinel-2, and — once ingested — ACLED data) yields the **concluded full-year** result
+    with no code change. **Every headline figure must be framed as a first-half-2026 case-study
+    snapshot, a lower bound on the full-year total — not the final number.**
+  - *Verification standard:* the Tier-2 human gates here were closed by the user, a Syria domain
+    expert (sound for a case study). For the conclusive research, verification should **preferably
+    be done by a field agent or an expert of both the topic and the geography** — ground-truth /
+    field verification is the gold standard above remote-sensing self-consistency (§6 intent).
+  - *How to apply:* (a) stamp the first-half-2026 / lower-bound caveat on the fire, flood, and
+    food-security headline outputs and any report; (b) the post-harvest re-run is the recommended
+    next milestone (≈ after Jul–Aug 2026); (c) S12 verification records this as the study's
+    headline scope caveat. See the project memory `case-study-first-half-2026-rerun`.

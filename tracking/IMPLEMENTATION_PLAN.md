@@ -1034,13 +1034,39 @@ The fire sourcing was challenged by the user (Syria domain expert): Latakia was 
 - [x] Canonical AOIs extended 4→14 (`build_aois.py`, `governorates.geojson`; first 4 `aoi_id`s byte-stable; Homs GeometryCollection normalised).
 - [x] Spec §3.1/§4 updated + DEC-037 logged (revising DEC-014/015 fire scope).
 - [x] National fire build → **48 unvalidated DamageRecords, 12 govs, ~10,533 ha union** (~6,600 inter). Hasakah 4,124 dominant; corroborates user's 2026 news (Idlib/Daraa/Aleppo).
-- [ ] National `cropland_mask.tif` (all 14) rebuilt for review/repro surface — *(build running)*.
-- [ ] Per-governorate validation packet assembled.
-- [ ] **HUMAN GATE (Tier-2):** human validates the national fire hectares. _Supersedes the old 8-record validated set — those validations do NOT carry over._ Agents may not tick this.
+- [x] National `cropland_mask.tif` (all 14) rebuilt (geedim, mosaic 18587×20592; per-gov cropland px in `_mask_stats.json`).
+- [x] Per-governorate validation packet assembled (13 panels + `VALIDATION_PACKET.md`).
+- [x] **HUMAN GATE (Tier-2) — CLOSED by the user (domain expert, 2026-06-14):** reviewed the full national packet, judged it "accurate enough to proceed", all 48 records set `validated`. Latakia + Damascus City verified-excluded (DEC-038). Supersedes the old 8-record validated set.
 
 ### Handoff notes
 
-_(in progress — see DEC-037; the old Hasakah+Latakia validated `fire_damage.csv` is superseded by the national 48-record unvalidated set; S8 food-security must re-run on the validated national records.)_
+**Status: COMPLETE (2026-06-14) — Tier-2 human gate CLOSED.** The fire pipeline is
+re-scoped national and the domain-expert user validated all 48 records (12 fire
+governorates), superseding the old 2-AOI set. DEC-037 (re-scope), DEC-038 (Latakia/
+Damascus City exclusion), DEC-039 (first-half-2026 case-study caveat + post-harvest
+re-run + field-verification recommendation) logged.
+
+**What landed:** AOIs 4→14 (`build_aois.py`, `governorates.geojson`; Homs GeometryCollection
+normalised); national `cropland_mask.tif`; 48 **validated** fire DamageRecords across 12
+governorates, **~10,533 ha union / ~6,613 ha intersection** (Hasakah 4,124 dominant;
+corroborates the user's 2026 Idlib/Daraa/Aleppo reporting); 13-panel validation packet;
+spec §3.1/§4 updated. Method unchanged from S7 (only the AOI loop widened). 60 tests pass.
+
+**⚠ For the NEXT session (S8 food-security re-run — REQUIRED, not yet done):** the national
+fire records (~10,533 ha, ~2.8× the old Hasakah-only 3,758) must flow into food-security.
+`food_security/impact_layer.py` is **coupled to the 4 original study AOIs**: `STUDY_AOIS`
+(4) and `load_baseline()` filters `is_study_aoi == true` (only 4 flagged in
+`baseline/production_baseline.csv`). The re-run needs: (a) widen the study AOIs to the 12
+fire governorates (all 14 are already in `production_baseline.csv` with cropland-share
+disaggregation, DEC-019 — just flag/include them), (b) update `STUDY_AOIS`, (c) re-run +
+update `food_security/test_impact_layer.py`. Log it as a decision (the food-security study
+area widens national).
+
+**Case-study caveat (DEC-039) — applies study-wide:** windows cover only **first-half 2026**
+(fires May 1–Jun 12; the summer harvest-fire peak is unobserved). All headline figures are
+**lower bounds**; re-run after the season (≈ Jul–Aug 2026) for the concluded full-year result.
+Stamp this caveat on every headline output/report. Field/expert verification preferred for
+the conclusive research.
 
 ---
 
@@ -1068,4 +1094,4 @@ The canonical decision log for this project is **`tracking/DECISIONS.md`** (seed
 | 10 | W8 — RQ2 fire attribution | Complete | 2026-06-13 | Tier-1; cropland-null + space-time + temporal overlay; 18 tests pass; DEC-036. **⚠ Live ACLED has no 2026 Syria data (max 2025-06-13) → 2026 study overlay deferred (gap flagged for S12); method built + demonstrated on 2025 window.** Demo finding: 2025 cropland fires **no closer** to armed conflict than cropland baseline → agricultural/seasonal, not conflict-concentrated |
 | 11 | W9 — RQ3 descriptive control overlay | Not started | | Descriptive only |
 | 12 | W10 — Verification / reproducibility | Not started | | Audit gate |
-| 13 | National fire re-scope (drop Latakia) | In progress | 2026-06-14 | DEC-037. AOIs 4→14; fires national. **48 unvalidated records, 12 govs, ~10,533 ha union** (Hasakah 4,124 dom.; corroborates 2026 news). Supersedes old 8-record validated fire set. ⏳ national mask build + packet + **Tier-2 human gate** pending. S8 must re-run |
+| 13 | National fire re-scope (drop Latakia) | Complete | 2026-06-14 | **Tier-2 gate CLOSED by human** (all 48 records `validated`, 12 govs, ~10,533 ha union; Hasakah 4,124 dom.; corroborates 2026 news). AOIs 4→14; national cropland mask; DEC-037/038/039. Supersedes old 8-record set. **⚠ S8 food-security re-run REQUIRED next** (impact_layer coupled to 4 AOIs). Case-study caveat: first-half-2026, lower bound, re-run post-harvest |
