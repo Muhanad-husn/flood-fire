@@ -28,7 +28,7 @@ import requests
 from clients import gee_auth
 from pipelines.fires import active_fire as af
 from pipelines.fires import burn_severity as bs
-from pipelines.fires.build_fires import JOBS, ROOT
+from pipelines.fires.build_fires import _jobs, ROOT
 
 OUT = ROOT / "outputs" / "fire_validation"
 _SEV_PALETTE = ["#ffffb2", "#fecc5c", "#fd8d3c", "#e31a1c"]  # low→high
@@ -98,7 +98,7 @@ def render():
     geoms = {f["properties"]["aoi_id"]: ee.Geometry(f["geometry"]) for f in g["features"]}
     union, _inter = bs.cropland_masks()
 
-    for aoi, label, date_str, sources, pre, post, is_study in JOBS:
+    for aoi, label, date_str, sources, pre, post, is_study in _jobs():
         rows = af.fetch(aoi, *date_str.split("/"), sources=sources)
         summ = af.summary(rows)
         if summ["n"] == 0:

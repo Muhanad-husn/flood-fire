@@ -35,11 +35,28 @@ DW_CROPS_THRESHOLD = 0.35   # annual-mean crops probability cut for DW cropland
 WC_YEAR = "2021"            # WorldCover v200 + DW reference year
 
 # Canonical AOIs (§3.1, §4). gaul = FAO GAUL 2015 ADM1_NAME spelling.
+# Re-scoped to NATIONAL (all 14 GAUL L1 governorates) at S13: the 2026 VIIRS
+# evidence showed crop fires are national (Hasakah-dominant) and that Latakia —
+# the original fire AOI — had 0 cropland fire in 2026 (it was anchored on the
+# 2025 EMSR811 *forest* fire). Floods stay on {Deir ez-Zor, Raqqa, Hasakah};
+# fires now cover every governorate with 2026 cropland fire (Latakia and Damascus
+# City have none → no `fires` tag, but they stay canonical AOIs). The first four
+# aoi_id slugs are unchanged so all existing flood/baseline references hold.
 AOIS = [
-    {"aoi_id": "deir_ez_zor", "name": "Deir ez-Zor", "gaul": "Dayr_Az_Zor", "pipelines": ["floods"]},
-    {"aoi_id": "raqqa",       "name": "Raqqa",       "gaul": "Raqqa",       "pipelines": ["floods"]},
-    {"aoi_id": "hasakah",     "name": "Hasakah",     "gaul": "Hassakeh",    "pipelines": ["floods", "fires"]},
-    {"aoi_id": "latakia",     "name": "Latakia",     "gaul": "Lattakia",    "pipelines": ["fires"]},
+    {"aoi_id": "deir_ez_zor",   "name": "Deir ez-Zor",   "gaul": "Dayr_Az_Zor",   "pipelines": ["floods", "fires"]},
+    {"aoi_id": "raqqa",         "name": "Raqqa",         "gaul": "Raqqa",         "pipelines": ["floods", "fires"]},
+    {"aoi_id": "hasakah",       "name": "Hasakah",       "gaul": "Hassakeh",      "pipelines": ["floods", "fires"]},
+    {"aoi_id": "latakia",       "name": "Latakia",       "gaul": "Lattakia",      "pipelines": []},
+    {"aoi_id": "homs",          "name": "Homs",          "gaul": "Homs",          "pipelines": ["fires"]},
+    {"aoi_id": "aleppo",        "name": "Aleppo",        "gaul": "Aleppo",        "pipelines": ["fires"]},
+    {"aoi_id": "rural_damascus","name": "Rural Damascus","gaul": "Damascus",      "pipelines": ["fires"]},
+    {"aoi_id": "hama",          "name": "Hama",          "gaul": "Hama",          "pipelines": ["fires"]},
+    {"aoi_id": "quneitra",      "name": "Quneitra",      "gaul": "Al_Qunaytirah", "pipelines": ["fires"]},
+    {"aoi_id": "tartus",        "name": "Tartus",        "gaul": "Tartous",       "pipelines": ["fires"]},
+    {"aoi_id": "idlib",         "name": "Idlib",         "gaul": "Idleb",         "pipelines": ["fires"]},
+    {"aoi_id": "daraa",         "name": "Daraa",         "gaul": "Dara",          "pipelines": ["fires"]},
+    {"aoi_id": "suwayda",       "name": "Suwayda",       "gaul": "As_Suweida",    "pipelines": ["fires"]},
+    {"aoi_id": "damascus_city", "name": "Damascus City", "gaul": "City_Damascus", "pipelines": []},
 ]
 
 AOIS_DIR = REPO / "aois"
@@ -69,9 +86,18 @@ def build_governorates(ee) -> dict:
     for a in AOIS:
         f = syria.filter(ee.Filter.eq("ADM1_NAME", a["gaul"])).first()
         geom = f.geometry()
-        geoms[a["aoi_id"]] = geom
         area_km2 = round(geom.area(10).divide(1e6).getInfo(), 1)
         gj = geom.getInfo()  # EPSG:4326 GeoJSON geometry
+        # GAUL occasionally returns a GeometryCollection (e.g. Homs) — normalise to
+        # a Polygon/MultiPolygon so every consumer (load_aois bbox, ee.Geometry,
+        # rasterize) has a `coordinates` key.
+        if gj.get("type") == "GeometryCollection":
+            from shapely.geometry import shape, mapping
+            from shapely.ops import unary_union
+            polys = [shape(g) for g in gj["geometries"]
+                     if g.get("type") in ("Polygon", "MultiPolygon")]
+            gj = mapping(unary_union(polys))
+        geoms[a["aoi_id"]] = ee.Geometry(gj)
         feats.append({
             "type": "Feature",
             "properties": {
@@ -106,7 +132,7 @@ def export_aoi_mask(ee, geedim, geom, name, out, attempts=4):
     for k in range(attempts):
         try:
             img.gd.toGeoTIFF(out, overwrite=True, nodata=NODATA,
-                             max_tile_size=1, max_tile_dim=1500, max_requests=16)
+                             max_tile_size=1, max_tile_dim=1500, max_requests=2)
             return
         except Exception as exc:  # transient "User memory limit exceeded" etc.
             last = exc
