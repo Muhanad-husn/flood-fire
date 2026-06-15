@@ -176,6 +176,60 @@ view = pd.concat([prominent[cols], summary[cols]], ignore_index=True).rename(col
 
 [↓ Full 12-governorate table (impact_national.csv)](https://github.com/Muhanad-husn/flood-fire/blob/main/outputs/food_security/impact_national.csv){.data-download}
 
+## Fire damage by burn severity
+
+The headline counts burned-cropland hectares; this breaks them out by **dNBR burn
+severity** (Key & Benson / USGS bins), the depth-of-burn signal behind the area. Most
+burned cropland sits in the *low* and *moderate-low* classes — consistent with stubble
+and field-edge fires rather than total crop loss — with high-severity hectares a small
+tail. Severity is shown for the union-cropland headline; the
+[Methods](technical.qmd) page explains the dNBR ∩ VIIRS chain.
+
+```{python}
+#| label: fig-fire-severity
+#| echo: false
+#| fig-cap: "Burned cropland (union-headline ha) by governorate and dNBR burn severity, 2026 study window (May 1 – Jun 12). Hasakah dominates the national fire signal; most hectares are low to moderate-low severity. First-half-2026 lower bound."
+#| fig-alt: "Stacked horizontal bar chart of 2026 burned cropland in hectares by governorate, each bar split by burn severity from low (pale orange) to high (dark red). Hasakah has by far the longest bar at roughly 4,100 hectares, then Raqqa near 1,200, with most governorates under a few hundred hectares; low and moderate-low severity make up the bulk of every bar."
+import matplotlib.pyplot as plt
+from viz import apply_theme, caveat_footer, CAVEATS
+
+sev = pd.read_csv(OUT / "tables" / "fire_damage_sensitivity.csv")
+sev = sev[sev["is_study"]].copy()
+
+SEV_ORDER = ["low", "moderate_low", "moderate_high", "high"]
+SEV_COLORS = {"low": "#fed976", "moderate_low": "#feb24c",
+              "moderate_high": "#fd8d3c", "high": "#bd0026"}
+SEV_LABEL = {"low": "low", "moderate_low": "moderate-low",
+             "moderate_high": "moderate-high", "high": "high"}
+
+wide = (sev.pivot_table(index="aoi_id", columns="severity_class",
+                        values="ha_union", aggfunc="sum", fill_value=0.0)
+           .reindex(columns=SEV_ORDER, fill_value=0.0))
+wide = wide.loc[wide.sum(axis=1).sort_values().index]  # ascending → biggest on top
+labels = [a.replace("_", " ").title() for a in wide.index]
+
+apply_theme()
+fig, ax = plt.subplots(figsize=(9, 5))
+left = pd.Series(0.0, index=wide.index)
+for cls in SEV_ORDER:
+    ax.barh(labels, wide[cls], left=left.values, color=SEV_COLORS[cls],
+            edgecolor="white", linewidth=0.5, label=SEV_LABEL[cls])
+    left += wide[cls]
+totals = wide.sum(axis=1)
+for y, total in enumerate(totals.values):
+    ax.text(total, y, f" {total:,.0f}", va="center", ha="left",
+            fontsize=7.5, color="#333333")
+ax.set_xlabel("Burned cropland — union headline (ha)")
+ax.set_ylabel("")
+ax.set_title("2026 burned cropland by governorate and dNBR severity")
+ax.margins(x=0.10)
+ax.legend(title="burn severity", loc="lower right", frameon=True, fontsize=8)
+caveat_footer(fig, CAVEATS["case_study_2026h1"])
+plt.show()
+```
+
+[↓ Data behind this figure (fire_damage_sensitivity.csv)](https://github.com/Muhanad-husn/flood-fire/blob/main/outputs/tables/fire_damage_sensitivity.csv){.data-download}
+
 ## Robustness — the headline without the RQ1-flagged hectares
 
 [RQ1](rq1.qmd) flags Hasakah's June flood hectares as a likely radar harvest artifact

@@ -111,3 +111,44 @@
   cursor: pointer;
 }
 @media print { .print-button { display: none !important; } }
+
+/* --- figure framing (Methods page plates) ----------------------------------
+ * Embedded PNG validation panels read as framed plates, consistent with the
+ * crisp SVG charts. Applied via a `.fig-frame` wrapper or directly to images
+ * inside a gallery grid. */
+.fig-frame img,
+.gallery-grid img {
+  border: 1px solid #e3e6ea;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(20, 51, 79, 0.06);
+}
+
+/* The validation gallery: Quarto's `layout-ncol` handles the columns; this just
+ * styles the captions and keeps the panels tidy. Stacks to 1-col on narrow
+ * screens via the Bootstrap container the report already uses. */
+.gallery-note {
+  font-variant: small-caps;
+  letter-spacing: 0.03em;
+  font-size: 0.82em;
+  color: #555;
+  margin: 0.2rem 0 0;
+}
+.gallery-note .anchor-note { color: #8a5a00; font-style: italic; }
+
+/* --- sensor / method table accent ------------------------------------------ */
+.method-table table {
+  font-size: 0.92em;
+}
+.method-table table thead th {
+  border-bottom: 2px solid #1f77b4;
+}
+.method-table table tbody tr:nth-child(odd) { background: #f7f9fc; }
+.method-table table td:first-child { font-family: var(--bs-font-monospace, monospace); }
+
+/* Print: drop the heavy validation gallery (like .data-download) so a saved
+ * PDF stays lean; keep the sensor table and diagrams. */
+@media print {
+  .gallery-grid, .gallery-note { display: none !important; }
+}
