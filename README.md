@@ -2,6 +2,10 @@
 
 **Measuring, from satellites, how the 2026 floods and crop fires set back Syria's fragile cereal recovery — on top of a record 2025 drought.**
 
+![Map of Syria with governorates shaded by 2026 cereal-production loss as a percentage of the 2025 drought baseline. Raqqa and Deir ez-Zor on the Euphrates are darkest (~7.6–7.8%), Hasakah moderate (~2.8%), other governorates pale; Latakia is greyed out as verified-excluded.](outputs/figures/national_loss_choropleth.png)
+
+*Where the shock landed: 2026 cereal-production loss by governorate, as a share of each one's 2025 drought baseline. The Euphrates flood corridor (Raqqa, Deir ez-Zor) is hit hardest. Validated records only; a first-half-2026 lower bound. A descriptive value map — no comparative or causal claim.*
+
 In 2025 Syria's rainfed cereal harvest collapsed under the worst drought on record (a national floor near **1.2 million tonnes**). 2026 brought a tentative recovery — and then two shocks hit it: a spring/early-summer **Euphrates flood surge** that inundated riverside cropland, and a wave of **agricultural field fires** across the country at harvest time. This study quantifies that damage, field by governorate, from open satellite data — and asks how much it cost a food system that was already on the edge.
 
 > 📊 **Read the full report →** https://muhanad-husn.github.io/flood-fire/ &nbsp;·&nbsp; 📄 [One-page executive brief](https://muhanad-husn.github.io/flood-fire/brief.html)
