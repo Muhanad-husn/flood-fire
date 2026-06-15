@@ -129,54 +129,92 @@ over post-fire Sentinel-2 with the dNBR severity overlay (fires), and per-pixel 
 frequency, transient vs persistent (floods). They are the *evidence behind the gate*,
 shown so a reader can inspect it too.
 
-::: {.gallery-grid layout-ncol=3}
-![Hasakah — the core 2026 cropland-fire signal](../outputs/fire_validation/hasakah_2026_validation.png)
+```{python}
+#| label: validation-gallery
+#| echo: false
+# The validation panels live in outputs/ (the data product), outside this Quarto
+# project dir, so Quarto would not publish a static `../outputs/...` reference.
+# Read each committed PNG, downscale it to a lightweight JPEG thumbnail, and embed
+# it as a base64 data-URI in a self-contained CSS grid (.gallery-grid in
+# styles.css) — canonical file, no duplication, ~1.7 MB for the whole gallery.
+import io, base64, pathlib
+from PIL import Image
+from IPython.display import HTML
 
-![Raqqa — large scars, few hotspots](../outputs/fire_validation/raqqa_2026_validation.png)
+REPO_ROOT = None
+for _cand in (pathlib.Path.cwd(), *pathlib.Path.cwd().parents):
+    if (_cand / "CLAUDE.md").exists() and (_cand / "outputs").is_dir():
+        REPO_ROOT = _cand
+        break
+OUT = REPO_ROOT / "outputs"
 
-![Deir ez-Zor — hotspots mostly off-cropland (discriminator working)](../outputs/fire_validation/deir_ez_zor_2026_validation.png)
+def _uri(path, width=820, quality=78):
+    """Committed PNG -> downscaled JPEG data-URI (satellite imagery is photographic,
+    so JPEG is ~20x smaller than the source PNG at display resolution)."""
+    im = Image.open(path).convert("RGB")
+    w, h = im.size
+    if w > width:
+        im = im.resize((width, round(h * width / w)), Image.LANCZOS)
+    buf = io.BytesIO()
+    im.save(buf, format="JPEG", quality=quality, optimize=True)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
-![Idlib](../outputs/fire_validation/idlib_2026_validation.png)
+def _grid(panels):
+    items = "".join(
+        f'<figure class="gallery-item"><img loading="lazy" src="{_uri(p)}" alt="{c}">'
+        f'<figcaption>{c}</figcaption></figure>'
+        for p, c in panels
+    )
+    return f'<div class="gallery-grid">{items}</div>'
 
-![Aleppo](../outputs/fire_validation/aleppo_2026_validation.png)
+FV = OUT / "fire_validation"
+FF = OUT / "floods" / "validation_packet"
 
-![Hama](../outputs/fire_validation/hama_2026_validation.png)
-
-![Homs](../outputs/fire_validation/homs_2026_validation.png)
-
-![Daraa](../outputs/fire_validation/daraa_2026_validation.png)
-
-![Rural Damascus](../outputs/fire_validation/rural_damascus_2026_validation.png)
-
-![Quneitra](../outputs/fire_validation/quneitra_2026_validation.png)
-
-![Suwayda](../outputs/fire_validation/suwayda_2026_validation.png)
-
-![Tartus](../outputs/fire_validation/tartus_2026_validation.png)
-:::
-
-::: {.gallery-note}
-Fire validation panels, 2026 study window. [The 2025 Latakia EMSR811 panel below is a
-method-anchor — a baseline-year demonstration against a Copernicus EMS forest fire, not a
-study damage record ([DEC-001](glossary.qmd#dec-001)).]{.anchor-note}
-:::
-
-::: {.gallery-grid layout-ncol=3}
-![Latakia 2025 — EMSR811 method-anchor (baseline, not a study record)](../outputs/fire_validation/latakia_2025_emsr811_validation.png)
-
-![Deir ez-Zor — flood frequency (transient vs persistent)](../outputs/floods/validation_packet/deir_ez_zor_flood_frequency.png)
-
-![Raqqa — flood frequency](../outputs/floods/validation_packet/raqqa_flood_frequency.png)
-
-![Hasakah — flood frequency (June extent flagged, see RQ1)](../outputs/floods/validation_packet/hasakah_flood_frequency.png)
-:::
+fire = [
+    (FV / "hasakah_2026_validation.png", "Hasakah — the core 2026 cropland-fire signal"),
+    (FV / "raqqa_2026_validation.png", "Raqqa — large scars, few hotspots"),
+    (FV / "deir_ez_zor_2026_validation.png", "Deir ez-Zor — hotspots mostly off-cropland (discriminator working)"),
+    (FV / "idlib_2026_validation.png", "Idlib"),
+    (FV / "aleppo_2026_validation.png", "Aleppo"),
+    (FV / "hama_2026_validation.png", "Hama"),
+    (FV / "homs_2026_validation.png", "Homs"),
+    (FV / "daraa_2026_validation.png", "Daraa"),
+    (FV / "rural_damascus_2026_validation.png", "Rural Damascus"),
+    (FV / "quneitra_2026_validation.png", "Quneitra"),
+    (FV / "suwayda_2026_validation.png", "Suwayda"),
+    (FV / "tartus_2026_validation.png", "Tartus"),
+]
+anchor_flood = [
+    (FV / "latakia_2025_emsr811_validation.png", "Latakia 2025 — EMSR811 method-anchor (baseline, not a study record)"),
+    (FF / "deir_ez_zor_flood_frequency.png", "Deir ez-Zor — flood frequency (transient vs persistent)"),
+    (FF / "raqqa_flood_frequency.png", "Raqqa — flood frequency"),
+    (FF / "hasakah_flood_frequency.png", "Hasakah — flood frequency (June extent flagged, see RQ1)"),
+]
+note = (
+    '<p class="gallery-note">Fire validation panels, 2026 study window. '
+    '<span class="anchor-note">The 2025 Latakia EMSR811 panel below is a method-anchor '
+    '— a baseline-year demonstration against a Copernicus EMS forest fire, not a study '
+    'damage record (DEC-001).</span></p>'
+)
+HTML(_grid(fire) + note + _grid(anchor_flood))
+```
 
 The cropland mask itself was the first artifact gated, reviewed per-AOI for its
 union / intersection / disagreement structure before any pipeline consumed it:
 
-::: {.fig-frame}
-![Cropland-mask QC, Deir ez-Zor: union, intersection, and where the two source satellites disagree (largest spread, ~72%, in this rainfed governorate).](../outputs/aoi_qc/deir_ez_zor_cropland_mask.png){width=70%}
-:::
+```{python}
+#| label: cropland-qc
+#| echo: false
+HTML(
+    '<figure class="fig-frame" style="max-width:70%;margin:0 auto;">'
+    f'<img src="{_uri(OUT / "aoi_qc" / "deir_ez_zor_cropland_mask.png")}" '
+    'alt="Cropland-mask QC for Deir ez-Zor: union, intersection, and source disagreement.">'
+    '<figcaption style="font-size:0.8em;color:#555;margin-top:0.3rem;">'
+    'Cropland-mask QC, Deir ez-Zor: union, intersection, and where the two source '
+    'satellites disagree (largest spread, ~72%, in this rainfed governorate).'
+    '</figcaption></figure>'
+)
+```
 
 ## Reproducibility by design
 

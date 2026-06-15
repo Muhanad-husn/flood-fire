@@ -12,3 +12,7 @@ jupyter
 pandas
 matplotlib
 seaborn
+# Pillow: downscale the committed validation-panel PNGs to lightweight JPEG
+# thumbnails, embedded as data-URIs on the Methods page (keeps the page small;
+# the panels live in outputs/, outside this project dir, so are not auto-copied).
+pillow
