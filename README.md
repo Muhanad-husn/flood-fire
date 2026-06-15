@@ -22,6 +22,10 @@ A **first-half-2026 snapshot** (the harvest/fire season peaks later, so these ar
 | **…as a share of the ~1.2 Mt national 2025 floor** | **~2.2%**, on top of an already record-low harvest |
 | Worst-hit governorates | **Raqqa −7.8%**, **Deir ez-Zor −7.6%**, **Hasakah −2.8%** of their 2025 baseline |
 
+![Estimated 2026 cereal-production loss by governorate, split into flood (blue) and fire (red) bars. Raqqa, Hasakah and Deir ez-Zor dominate via floods; nine more governorates show a smaller fire tail.](outputs/figures/w6_food_security_production_loss.png)
+
+*The national picture: estimated 2026 cereal-production loss by governorate, split into flood (blue) and fire (red). Floods on the Euphrates/Khabur dominate the tonnage; fire is broad but individually small. Validated records only — a first-half-2026 lower bound.*
+
 **The shape of the story:** floods (Euphrates-driven) dominate the *tonnage*; fires are *geographically broad but individually small*. The loss is incremental stress stacked on a drought baseline — a production-shock signal that feeds, but does not replace, a formal GIEWS / FEWS NET / IPC food-security assessment.
 
 ### The three research questions
@@ -31,6 +35,10 @@ A **first-half-2026 snapshot** (the harvest/fire season peaks later, so these ar
 | **RQ1** | What drove the 2026 floods — rain or upstream river discharge? | **Upstream/transboundary Euphrates discharge** (a sustained dry-season ~1,600 m³/s plateau, ~6× the drought baseline, at *zero* local rain). Natural-vs-managed release: **not asserted** — proportionate to the evidence. | HIGH (source) · LOW (cause) |
 | **RQ2** | Are the crop fires linked to armed conflict? | **No** — fires sit no closer to conflict than cropland does in general; they read as a **drought-and-heat agricultural hazard**. (2026 conflict data not yet available; demonstrated on the analogous 2025 season.) | GAP / demonstrated |
 | **RQ3** | Where does the damage fall relative to areas of control? | A **descriptive** overlay only — *where* damage lands, never a claim that any administration fared better or worse (contested boundaries). | Descriptive |
+
+![Three stacked time-series panels (Deir ez-Zor, Raqqa, Hasakah) showing local rainfall as blue bars and upstream river discharge as a red line, with validated flood dates marked as dashed lines.](outputs/figures/w7_rq1_rainfall_vs_discharge.png)
+
+*RQ1 evidence: local rainfall (blue bars) vs upstream river discharge (red line) per governorate, with validated flood dates marked. June flooding tracks a sustained Euphrates discharge plateau at near-zero local rain — an upstream/transboundary signal, not a local-rainfall one.*
 
 ---
 
@@ -69,6 +77,22 @@ Two parallel pipelines, **one repo, one shared output**. That shared output — 
 The geospatial engineering — SAR change-detection against an in-season per-orbit median, the 375 m fire-vs-harvest discriminator, metric-area (UTM 37N) discipline, and the Google Earth Engine export constraints — is written up in **[`tracking/GEOSPATIAL_METHODS.md`](tracking/GEOSPATIAL_METHODS.md)**.
 
 ---
+
+## From satellite pixels to maps
+
+Google Earth Engine is where the raw satellite archives live — petabytes of Sentinel-1 radar and Sentinel-2 optical scenes. We never download a scene. Instead we build a *server-side computation* that turns raw pixels into a thematic damage layer, and pull back only the finished, bounded result:
+
+- **Floods (radar).** Open water reflects radar away from the satellite, so it reads dark. We compare each Sentinel-1 acquisition against an in-season median "no-flood" backdrop, keep only pixels that dropped sharply *and* sit on the floodplain, then stack the flood dates into a per-pixel **flood-frequency** map.
+- **Fires (optical + thermal).** A burn scar darkens in the short-wave infrared, captured as a **dNBR** severity index from Sentinel-2 — then we keep only scars within 375 m of a **VIIRS** active-fire detection, so harvest and ploughing aren't mistaken for fire.
+
+The finished layers are exported tile-by-tile (`geedim`), clipped to each governorate locally, and rendered as the maps below — the exact surface a human reviews against ground truth before any number is trusted. Full method: [`tracking/GEOSPATIAL_METHODS.md`](tracking/GEOSPATIAL_METHODS.md).
+
+<p align="center">
+  <img src="outputs/fire_validation/hasakah_2026_validation.png" width="49%" alt="Hasakah fire validation: Sentinel-2 dNBR burn-severity classes confirmed by cyan VIIRS hotspots over a satellite basemap." />
+  <img src="outputs/floods/validation_packet/deir_ez_zor_flood_frequency.png" width="49%" alt="Deir ez-Zor flooded-cropland map: pixels coloured by how many dates they flooded, resolving the Euphrates ribbon and a north-west surge cluster." />
+</p>
+
+*Left — Hasakah crop fires: Sentinel-2 dNBR burn-severity classes (yellow→red) confirmed by VIIRS hotspots (cyan), over the true-colour basemap. Right — Deir ez-Zor flooded cropland: each pixel coloured by how many dates it flooded; the permanent Euphrates ribbon and the north-west flood surge are clearly resolved. Both are **unvalidated Tier-2 review surfaces** (§6) — the human-validation step is what turns these into trusted figures.*
 
 ## What makes it credible
 
