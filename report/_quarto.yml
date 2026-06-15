@@ -31,6 +31,8 @@ website:
         text: "Executive brief"
       - href: food_security.qmd
         text: Food security
+      - href: technical.qmd
+        text: Methods
       - text: "Research questions"
         menu:
           - href: rq.qmd

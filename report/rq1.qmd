@@ -107,6 +107,57 @@ plt.show()
 
 [↓ Discharge series (glofas_discharge_2026.csv)](https://github.com/Muhanad-husn/flood-fire/blob/main/outputs/floods/rq1_attribution/glofas_discharge_2026.csv){.data-download}
 
+## How the flood dates were chosen
+
+Sentinel-1 passes every ~6 days, and running a full 30 m export on every date is
+expensive, so each date is first **screened** cheaply at 150 m for flooded-cropland
+extent; only the peaks (the **event-dates**, marked below) get the full-resolution
+export that produces the validated hectares ([DEC-024](glossary.qmd#dec-024)). The
+screening series shows the structure attribution then explains: a **March** pulse and
+a larger **June** rise on the Euphrates AOIs, against a low background the rest of the
+season.
+
+```{python}
+#| label: fig-screening
+#| echo: false
+#| fig-cap: "Sentinel-1 screening series: daily flooded-cropland extent (150 m screen, ha) per AOI across the 2026 flood window, with the selected event-dates marked. Only event-dates are exported at 30 m for the validated damage records (DEC-024). First-half-2026 lower bound."
+#| fig-alt: "Line chart of daily flooded-cropland screening extent in hectares for Deir ez-Zor, Raqqa and Hasakah from March to June 2026. Each line has a few sharp peaks; larger circular markers sit on the selected event-dates, clustered in early March and again in late May to June. Background extent between peaks is low."
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from viz import apply_theme, caveat_footer, CAVEATS
+
+scr = pd.read_csv(RQ1.parent / "validation_packet" / "screening_series.csv",
+                  parse_dates=["date"])
+
+apply_theme()
+fig, ax = plt.subplots(figsize=(9, 5))
+for aoi in sorted(scr["aoi_id"].unique()):
+    s = scr[scr["aoi_id"] == aoi].sort_values("date")
+    label = aoi.replace("_", " ").title()
+    line, = ax.plot(s["date"], s["flooded_cropland_ha_screen"], linewidth=1.4,
+                    marker="o", markersize=2.5, alpha=0.85, label=label)
+    ev = s[s["is_event"]]
+    ax.scatter(ev["date"], ev["flooded_cropland_ha_screen"], s=70,
+               facecolors="none", edgecolors=line.get_color(), linewidths=1.6,
+               zorder=5)
+ax.scatter([], [], s=70, facecolors="none", edgecolors="#555555",
+           linewidths=1.6, label="selected event-date")
+ax.set_xlabel("2026")
+ax.set_ylabel("Flooded cropland — 150 m screen (ha)")
+ax.set_title("Sentinel-1 screening series and the selected flood event-dates")
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+ax.legend(loc="upper right", frameon=True, fontsize=8)
+caveat_footer(fig, CAVEATS["case_study_2026h1"])
+plt.show()
+```
+
+[↓ Screening series (screening_series.csv)](https://github.com/Muhanad-husn/flood-fire/blob/main/outputs/floods/validation_packet/screening_series.csv){.data-download}
+
+The screen is a deliberately cheap proxy (150 m, no HAND gate), so its absolute
+hectares run higher than the validated 30 m figures — it is an **event-finder**, not
+the damage measure. The validated extent comes only from the marked event-dates, after
+the full chain in [Methods](technical.qmd).
+
 ## Per-event mechanism (the evidence)
 
 Discharge is same-day at the draining reach; the ratio is versus the 2025 GloFAS

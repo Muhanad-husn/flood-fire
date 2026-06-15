@@ -1,0 +1,216 @@
+---
+title: "Methods & technical design"
+subtitle: "How raw satellite imagery becomes a validated damaged-cropland hectare"
+---
+
+::: {.callout-tip appearance="simple"}
+**In one line.** Two independent remote-sensing pipelines — Sentinel-1 SAR for floods,
+Sentinel-2 + VIIRS for fires — are forced through **one shared schema** and **one human
+validation gate**, so every number in this report is a human-checked, reproducible
+`damaged_cropland_ha`. This page is the engineering behind the headlines.
+:::
+
+The credibility of a conflict-zone damage estimate rests on *how* it was produced. This
+report's spine is a deliberate piece of design: two phenomena, two pipelines, but a
+**single output contract** and a **single point where a human signs off**. Nothing
+downstream can see a pipeline's internal rasters; it sees only validated records.
+
+## The integration contract
+
+Floods and fires are measured by completely different physics — radar backscatter vs
+optical burn spectra — yet both pipelines emit the *same* record: `damaged_cropland_ha`
+per area-of-interest (AOI) per date, tagged with phenomenon, severity, and a validation
+status. That shared schema (`schema/damage_schema.py`) is what makes this **one study
+rather than two**: the food-security layer and the three research questions read the
+schema and nothing else.
+
+```{mermaid}
+%%| label: fig-architecture
+%%| fig-cap: "The dual-pipeline architecture. Two sensors, two server-side builders, one local authoritative hectare, one schema, one human gate — then the food-security and research-question layers, which never touch pipeline internals."
+flowchart TD
+  S1[Sentinel-1 SAR] --> FM[flood_mask<br/>dual-pol AND + HAND gate]
+  S2[Sentinel-2 optical] --> BS[burn_severity<br/>dNBR bins + VIIRS confirm]
+  VI[VIIRS 375 m active fire] --> BS
+  CM[WorldCover + Dynamic World] --> MASK[cropland_mask.tif<br/>human-reviewed]
+  FM --> HA[damaged_cropland_ha<br/>union vs intersection]
+  BS --> HA
+  MASK --> HA
+  HA --> SCHEMA[Shared damage schema]
+  SCHEMA --> GATE{Tier-2 human<br/>validation gate}
+  GATE -->|validated only| FS[Food-security impact]
+  GATE -->|validated only| RQ[RQ1 / RQ2 / RQ3]
+  CH[CHIRPS rainfall] --> RQ
+  GF[GloFAS discharge] --> RQ
+```
+
+## Compute on the cloud, decide locally
+
+The work happens in two places, and the split is the point:
+
+- **Google Earth Engine (server-side).** All petabyte-scale imagery lives in the GEE
+  catalog; we never download a scene. Each pipeline builds a *lazy* `ee.Image`
+  computation graph — filter → mask → arithmetic → threshold — that GEE evaluates only
+  when we ask for a number or a bounded raster tile.
+- **Local (the authoritative numbers).** The hectares that actually enter the report are
+  recomputed **on-machine against the human-reviewed `aois/cropland_mask.tif`**, never a
+  server-side proxy. Speckle cleanup, clipping, and the validation packets are local.
+
+> Rule of thumb: GEE does the heavy raster algebra; the *trusted* numbers are recomputed
+> locally against committed, human-reviewed artifacts — the ones a person gates.
+
+## The sensors
+
+Each input is chosen for one job, and each carries a documented limitation that shapes
+how its output is used.
+
+::: {.method-table}
+| Source (GEE / API) | Sensor / type | Role — and its honest limit |
+|---|---|---|
+| `COPERNICUS/S1_GRD` | Sentinel-1 C-band SAR (VV+VH) | **Flood extent** — sees water through cloud; captures *open standing water only* (flooded vegetation under-detected) |
+| `COPERNICUS/S2_SR_HARMONIZED` | Sentinel-2 optical (B8, B12) | **Burn severity** via dNBR; over cropland a burn scar is spectrally indistinguishable from harvest/ploughing |
+| FIRMS **VIIRS 375 m** | Active-fire thermal | **Fire confirmation** — the thermal proof a dNBR scar was fire, not harvest (never MODIS for detection) |
+| `ESA/WorldCover/v200` | 10 m land cover | Cropland mask — *liberal* source (rainfed/fallow) |
+| `GOOGLE/DYNAMICWORLD/V1` | 10 m near-real-time | Cropland mask — *conservative* source (`crops`>0.35) |
+| `JRC/GSW1_4/GlobalSurfaceWater` | Permanent-water occurrence | Subtract the permanent river so it is never counted as damage |
+| `MERIT/Hydro/v1_0_1` (HAND) | Height-above-drainage | Floodplain gate — rejects dry upland radar false positives |
+| `COPERNICUS/DEM/GLO30` | 30 m DEM → slope | Rejects radar-shadow false positives |
+| `UCSB-CHG/CHIRPS/DAILY` | Gridded rainfall (~5.5 km) | Drought baseline + RQ1 local-rainfall check |
+| GloFAS (`cems-glofas-*`) | River-discharge reanalysis | RQ1 riverine attribution (reanalysis, not a gauge) |
+:::
+
+Every GEE collection ID was verified against the live catalog before use; one drift was
+caught and flagged (CHIRPS daily resolves at `UCSB-CHG/CHIRPS/DAILY`, not the spec's
+older slash form) rather than silently patched.
+
+## How an image becomes a hectare
+
+**Floods — a change in radar backscatter.** Smooth open water reflects radar away from
+the sensor, so it reads dark; a flood is a *drop* versus a no-flood reference. The chain
+guards against the two ways that fools you:
+
+1. **In-season, per-relative-orbit reference.** The backdrop is the median of all
+   March–June acquisitions *of the same orbit* as the event. *In-season* removes
+   crop-phenology bias (an early dry-summer reference flagged dense spring canopy as
+   "flood" across whole governorates); *per-orbit* keeps the incidence-angle geometry
+   matched.
+2. **Dual-pol AND, not OR.** `flood = (VV drop ≥ 4 dB) AND (VV < −18 dB) AND (VH < −24
+   dB)` — requiring *both* bands to be water-dark roughly halves false positives.
+3. **HAND floodplain gate (< 15 m).** Post-harvest bare fields are also radar-dark; the
+   height-above-drainage gate keeps low-lying riverine flood and drops dry uplands. Then
+   permanent water (JRC) and steep slopes (GLO-30) are subtracted.
+
+**Fires — a spectral scar, thermally confirmed.** `NBR = (B8 − B12)/(B8 + B12)` on
+cloud-masked Sentinel-2 medians; `dNBR = NBR_pre − NBR_post` rises over burns, binned to
+severity at the USGS/Key-&-Benson thresholds (0.10 / 0.27 / 0.44 / 0.66). Because dNBR
+*also* drops at harvest, a scar counts as fire damage **only within 375 m of a VIIRS
+active-fire detection** — the thermal discriminator. This is conservative by design (a
+VIIRS-missed burn is not counted), so burned hectares are a lower bound.
+
+**Cropland, reported as a range.** The two best 10 m cropland sources disagree, so rather
+than pick one, the mask encodes both *and their disagreement* in one categorical raster:
+union (either source) is the headline, intersection (both agree) the conservative low
+bound. **Every damage figure in this report is therefore a union-vs-intersection range,**
+the honest expression of cropland-definition uncertainty.
+
+## The validation framework
+
+Correctness here is not "the tests pass." It is two distinct tiers:
+
+- **Tier 1 — agent-verifiable.** Schema conformance, gate logic, caching, arithmetic —
+  covered by **85 automated tests**. A machine can certify these.
+- **Tier 2 — human-gated.** Flood masks, burn scars, and any `damaged_cropland_ha`
+  derived from them are validated by a human domain expert against named ground truth
+  (GloFAS event windows, Copernicus EMS). **No code path can set a record to
+  `validated`** — the food-security layer *refuses* (raises) if handed a single
+  non-validated record. The gate is enforced in code via `viz.consumable_records()`.
+
+The panels below are exactly what a human reviewed to close each gate — VIIRS hotspots
+over post-fire Sentinel-2 with the dNBR severity overlay (fires), and per-pixel flood
+frequency, transient vs persistent (floods). They are the *evidence behind the gate*,
+shown so a reader can inspect it too.
+
+::: {.gallery-grid layout-ncol=3}
+![Hasakah — the core 2026 cropland-fire signal](../outputs/fire_validation/hasakah_2026_validation.png)
+
+![Raqqa — large scars, few hotspots](../outputs/fire_validation/raqqa_2026_validation.png)
+
+![Deir ez-Zor — hotspots mostly off-cropland (discriminator working)](../outputs/fire_validation/deir_ez_zor_2026_validation.png)
+
+![Idlib](../outputs/fire_validation/idlib_2026_validation.png)
+
+![Aleppo](../outputs/fire_validation/aleppo_2026_validation.png)
+
+![Hama](../outputs/fire_validation/hama_2026_validation.png)
+
+![Homs](../outputs/fire_validation/homs_2026_validation.png)
+
+![Daraa](../outputs/fire_validation/daraa_2026_validation.png)
+
+![Rural Damascus](../outputs/fire_validation/rural_damascus_2026_validation.png)
+
+![Quneitra](../outputs/fire_validation/quneitra_2026_validation.png)
+
+![Suwayda](../outputs/fire_validation/suwayda_2026_validation.png)
+
+![Tartus](../outputs/fire_validation/tartus_2026_validation.png)
+:::
+
+::: {.gallery-note}
+Fire validation panels, 2026 study window. [The 2025 Latakia EMSR811 panel below is a
+method-anchor — a baseline-year demonstration against a Copernicus EMS forest fire, not a
+study damage record ([DEC-001](glossary.qmd#dec-001)).]{.anchor-note}
+:::
+
+::: {.gallery-grid layout-ncol=3}
+![Latakia 2025 — EMSR811 method-anchor (baseline, not a study record)](../outputs/fire_validation/latakia_2025_emsr811_validation.png)
+
+![Deir ez-Zor — flood frequency (transient vs persistent)](../outputs/floods/validation_packet/deir_ez_zor_flood_frequency.png)
+
+![Raqqa — flood frequency](../outputs/floods/validation_packet/raqqa_flood_frequency.png)
+
+![Hasakah — flood frequency (June extent flagged, see RQ1)](../outputs/floods/validation_packet/hasakah_flood_frequency.png)
+:::
+
+The cropland mask itself was the first artifact gated, reviewed per-AOI for its
+union / intersection / disagreement structure before any pipeline consumed it:
+
+::: {.fig-frame}
+![Cropland-mask QC, Deir ez-Zor: union, intersection, and where the two source satellites disagree (largest spread, ~72%, in this rainfed governorate).](../outputs/aoi_qc/deir_ez_zor_cropland_mask.png){width=70%}
+:::
+
+## Reproducibility by design
+
+The whole study is built to reproduce from a clean checkout without a human in the loop
+*except* at the Tier-2 gate:
+
+- **Non-interactive GEE auth.** A service-account key path was added because Google
+  blocks the legacy `drive` OAuth scope for the default client — so the pipeline
+  authenticates headless, no browser step.
+- **Cached, checkpointed pulls.** One shared cache backs all four external clients
+  (FIRMS, CHIRPS, ACLED, GloFAS); a cache hit *never* calls the network, so retries and
+  resumes spend no quota and a multi-day pull resumes mid-stream.
+- **Frozen presentation.** This Quarto site renders with `freeze: auto` and reads only
+  committed, validated CSV tables — so publishing **never re-triggers an expensive GEE
+  pull**, and the figures are byte-stable. The build needs no geospatial stack at all.
+- **Static artifact.** A version-controlled site (no server, no database) was chosen over
+  a dashboard precisely because reproducibility is a first-class goal here, not an
+  operational live tool.
+
+## Honest limitations
+
+Rigor includes saying what the numbers are *not*:
+
+- **First-half-2026 lower bounds.** Windows cover floods Mar–Jun and fires May 1 – Jun 12;
+  the summer harvest and fire peak are unobserved. The study is built to re-run
+  post-harvest for the concluded result.
+- **RQ2 data gap.** Live ACLED Syria coverage ends 2025-06-13, so the 2026 fire–conflict
+  overlay cannot yet be computed; the method is demonstrated on the fully-covered 2025
+  window and will complete automatically once 2026 data is ingested.
+- **One flagged record.** Hasakah's June flood hectares match a known SAR
+  harvest-artifact failure mode and are flagged, not silently dropped; the food-security
+  headline is robust to them (it moves ~5%).
+- **Field verification is the gold standard.** Remote-sensing self-consistency is not
+  ground truth; expert and field confirmation sit above it, and the design invites that
+  cross-check rather than foreclosing it.
+
+{{< include _footer.qmd >}}
