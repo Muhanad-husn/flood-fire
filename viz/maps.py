@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-from typing import Mapping
+from typing import Iterable, Mapping, Sequence
 
 # Canonical AOIs (docs/STRUCTURE.md §3.1) — every module reads these, none redefine.
 AOIS_GEOJSON = Path(__file__).resolve().parent.parent / "aois" / "governorates.geojson"
@@ -128,6 +128,13 @@ def choropleth(
     geojson_path: Path | None = None,
     figsize: tuple[float, float] = (8.5, 7.5),
     simplify_deg: float = 0.008,
+    points: Iterable[tuple[float, float]] | None = None,
+    point_values: Sequence[float] | None = None,
+    point_cmap: str = "inferno",
+    point_size: float = 3.0,
+    point_alpha: float = 0.55,
+    point_color: str = "#333333",
+    point_cbar_label: str | None = None,
 ):
     """Draw a governorate choropleth shaded by ``values`` (keyed by ``aoi_id``).
 
@@ -135,7 +142,9 @@ def choropleth(
     ----------
     values
         ``{aoi_id: value}``. AOIs absent from the mapping are drawn in the neutral
-        no-data grey (e.g. verified-excluded Latakia / Damascus City).
+        no-data grey (e.g. verified-excluded Latakia / Damascus City). Pass an
+        empty mapping to draw outlines only (e.g. a pure hotspot map) — the value
+        colour-bar is then suppressed.
     title, cbar_label
         Plot title and colour-bar label.
     cmap
@@ -143,13 +152,17 @@ def choropleth(
         reads as low→high loss and survives greyscale / common colour-blindness).
     value_fmt
         Format applied to the per-governorate value annotation.
+    points
+        Optional ``(lon, lat)`` pairs scattered above the choropleth — e.g. VIIRS
+        active-fire hotspots. ``point_values`` (same length, e.g. FRP) colours them
+        on a log scale with its own colour-bar; otherwise they use ``point_color``.
 
     Returns the matplotlib ``Figure``. The caller stamps caveats via
     ``caveat_footer`` and Quarto embeds it; nothing is written to disk here.
     """
     import matplotlib.pyplot as plt
     from matplotlib.cm import ScalarMappable
-    from matplotlib.colors import Normalize
+    from matplotlib.colors import LogNorm, Normalize
     from matplotlib.patches import Polygon as MplPolygon
 
     path = geojson_path or AOIS_GEOJSON
@@ -197,6 +210,26 @@ def choropleth(
                 path_effects=_halo(),
             )
 
+    # Optional hotspot overlay (e.g. VIIRS active-fire points), drawn above the
+    # choropleth. Colour-by-value (FRP) uses a log scale so a few high-power
+    # detections don't wash out the rest.
+    point_sc = None
+    if points is not None:
+        plons = [p[0] for p in points]
+        plats = [p[1] for p in points]
+        if point_values is not None:
+            pvals = [max(float(v), 1e-3) for v in point_values]
+            point_sc = ax.scatter(
+                plons, plats, c=pvals, cmap=point_cmap,
+                norm=LogNorm(vmin=1.0, vmax=max(max(pvals), 10.0)),
+                s=point_size, alpha=point_alpha, linewidths=0, zorder=2,
+            )
+        else:
+            ax.scatter(plons, plats, c=point_color, s=point_size,
+                       alpha=point_alpha, linewidths=0, zorder=2)
+        all_lons.extend(plons)
+        all_lats.extend(plats)
+
     # Geographic aspect: 1 deg lon is shorter than 1 deg lat away from the equator.
     mean_lat = sum(all_lats) / len(all_lats)
     ax.set_aspect(1.0 / math.cos(math.radians(mean_lat)))
@@ -205,8 +238,12 @@ def choropleth(
     ax.set_axis_off()
     ax.set_title(title)
 
-    cbar = fig.colorbar(cmapper, ax=ax, fraction=0.035, pad=0.02, shrink=0.7)
-    cbar.set_label(cbar_label)
+    if values:  # suppress the value bar for an outlines-only / hotspot map
+        cbar = fig.colorbar(cmapper, ax=ax, fraction=0.035, pad=0.02, shrink=0.7)
+        cbar.set_label(cbar_label)
+    if point_sc is not None:
+        pcb = fig.colorbar(point_sc, ax=ax, fraction=0.035, pad=0.02, shrink=0.7)
+        pcb.set_label(point_cbar_label or cbar_label)
 
     return fig
 
