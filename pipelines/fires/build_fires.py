@@ -35,9 +35,10 @@ OUT_HOTSPOTS = ROOT / "outputs" / "fire_hotspots"
 
 # 2026 fire-season windows (S13 national re-scope). Same calendar windows for
 # every governorate; dNBR is computed only over each governorate's VIIRS footprint.
-WINDOW_2026 = "2026-05-01/2026-06-12"   # available VIIRS NRT slice of May–Jul season
+# Window extended to live VIIRS NRT coverage as of 2026-06-27 (re-run update).
+WINDOW_2026 = "2026-05-01/2026-06-27"   # available VIIRS NRT slice of May–Jul season
 PRE_2026 = ("2026-03-15", "2026-04-30")
-POST_2026 = ("2026-05-25", "2026-06-12")
+POST_2026 = ("2026-05-25", "2026-06-27")
 
 
 def _gov_features() -> list[dict]:
@@ -146,10 +147,10 @@ def run() -> None:
             w.writeheader()
             w.writerows(anchor_rows)
 
-    print(f"\nWROTE {len(study_records)} study DamageRecords (all UNVALIDATED) → "
+    print(f"\nWROTE {len(study_records)} study DamageRecords (all UNVALIDATED) -> "
           f"{OUT_TABLES/'fire_damage.csv'}")
-    print(f"      sensitivity range → {OUT_TABLES/'fire_damage_sensitivity.csv'}")
-    print(f"      EMSR811 anchor → {OUT_TABLES/'fire_validation_anchor_emsr811.csv'}")
+    print(f"      sensitivity range -> {OUT_TABLES/'fire_damage_sensitivity.csv'}")
+    print(f"      EMSR811 anchor -> {OUT_TABLES/'fire_validation_anchor_emsr811.csv'}")
 
 
 if __name__ == "__main__":
